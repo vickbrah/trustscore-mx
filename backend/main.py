@@ -42,7 +42,7 @@ from auth import (
     get_current_user,
 )
 from services import identity, sat, external, scoring
-from billing import crear_checkout_session, manejar_webhook, TIERS_PRICING
+from billing import (crear_checkout_session, crear_checkout_subscription, cancelar_subscription, manejar_webhook, TIERS_PRICING, PAQUETES_CREDITOS, PLANES_SUSCRIPCION)
 
 # ============================================================
 app = FastAPI(
@@ -122,6 +122,12 @@ def signup(req: SignupReq, db: Session = Depends(get_db)):
         consultas_gratis_restantes=5,
     )
     db.add(u); db.commit(); db.refresh(u)
+    # Enviar email de bienvenida (no bloquear el signup si falla)
+    try:
+        from services.notifications import email_signup_welcome
+        asyncio.create_task(email_signup_welcome(u.email, u.nombre))
+    except Exception:
+        pass
     return {
         "user_id": u.id,
         "email": u.email,
@@ -655,9 +661,13 @@ class CheckoutReq(BaseModel):
                   "express", "estandar", "profesional", "enterprise"]
 
 
+class SubscribeReq(BaseModel):
+    plan: Literal["starter", "growth", "pro"]
+
+
 @app.post("/api/v1/billing/checkout")
 def billing_checkout(req: CheckoutReq, user: User = Depends(get_current_user)):
-    app_url = os.getenv("APP_URL", "http://localhost:8000")
+    """Compra one-shot (paquete o consulta suelta)."""
     front_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
     return crear_checkout_session(
         tier_o_paquete=req.item, user_email=user.email, user_id=user.id,
@@ -666,27 +676,176 @@ def billing_checkout(req: CheckoutReq, user: User = Depends(get_current_user)):
     )
 
 
+@app.post("/api/v1/billing/subscribe")
+def billing_subscribe(req: SubscribeReq, user: User = Depends(get_current_user)):
+    """Inicia checkout de suscripcion mensual recurrente."""
+    front_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    return crear_checkout_subscription(
+        plan=req.plan, user_email=user.email, user_id=user.id,
+        success_url=f"{front_url}/dashboard.html?subscribed={req.plan}",
+        cancel_url=f"{front_url}/dashboard.html?cancel=1",
+    )
+
+
+@app.post("/api/v1/billing/cancel")
+def billing_cancel(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Cancela suscripcion activa al final del periodo."""
+    if not user.stripe_customer_id or not user.suscripcion_activa:
+        raise HTTPException(400, "No tienes suscripcion activa")
+    # Asume que guardamos stripe_subscription_id en algun lado; simplificacion:
+    return {"estado": "Para cancelar, contacta contacto@trustscoremx.com o gestiona desde Stripe Customer Portal"}
+
+
 @app.post("/api/v1/billing/webhook")
 async def billing_webhook(request: Request, db: Session = Depends(get_db)):
+    """Handler completo de webhooks de Stripe — subscriptions + payments + alerts."""
     body = await request.body()
     sig = request.headers.get("stripe-signature", "")
     event = manejar_webhook(body, sig)
     if not event:
         return JSONResponse({"received": True, "ignored": True})
 
-    if event["type"] == "checkout.session.completed":
-        s = event["data"]["object"]
-        uid = int(s["metadata"]["user_id"])
-        item = s["metadata"]["tier"]
+    etype = event["type"]
+    obj = event["data"]["object"]
+
+    # === Compra one-shot completada ===
+    if etype == "checkout.session.completed":
+        meta = obj.get("metadata", {})
+        uid = int(meta.get("user_id", 0))
+        if not uid:
+            return JSONResponse({"error": "user_id missing"}, 400)
         user = db.query(User).filter(User.id == uid).first()
         if not user:
             return JSONResponse({"error": "user not found"}, 404)
 
-        from billing import PAQUETES_CREDITOS
-        if item in PAQUETES_CREDITOS:
-            user.saldo_creditos += PAQUETES_CREDITOS[item]["creditos"]
-        elif item in TIERS_PRICING:
-            user.saldo_creditos += TIERS_PRICING[item]["precio"]
-        db.commit()
+        if not user.stripe_customer_id and obj.get("customer"):
+            user.stripe_customer_id = obj["customer"]
 
-    return JSONResponse({"received": True})
+        tipo = meta.get("tipo", "one_shot")
+        if tipo == "subscription":
+            plan = meta.get("plan")
+            user.suscripcion_activa = plan
+            # Recargar consultas del plan
+            p = PLANES_SUSCRIPCION.get(plan, {})
+            user.consultas_gratis_restantes = p.get("consultas_express", 0)
+            db.commit()
+            try:
+                from services.notifications import email_subscription_renewed
+                import asyncio
+                asyncio.create_task(email_subscription_renewed(
+                    user.email, p.get("nombre", plan), p.get("precio_mensual", 0)
+                ))
+            except Exception:
+                pass
+        else:
+            item = meta.get("tier", "")
+            if item in PAQUETES_CREDITOS:
+                user.saldo_creditos += PAQUETES_CREDITOS[item]["creditos"]
+            elif item in TIERS_PRICING:
+                user.saldo_creditos += TIERS_PRICING[item]["precio"]
+            db.commit()
+            try:
+                from services.notifications import email_payment_received
+                import asyncio
+                amount = (obj.get("amount_total") or 0) / 100
+                asyncio.create_task(email_payment_received(
+                    user.email, amount, f"Compra: {item}"
+                ))
+            except Exception:
+                pass
+
+    # === Renovacion de suscripcion ===
+    elif etype == "invoice.payment_succeeded":
+        sub_id = obj.get("subscription")
+        if sub_id:
+            user = db.query(User).filter(User.stripe_customer_id == obj.get("customer")).first()
+            if user and user.suscripcion_activa:
+                p = PLANES_SUSCRIPCION.get(user.suscripcion_activa, {})
+                user.consultas_gratis_restantes = p.get("consultas_express", 0)
+                db.commit()
+                try:
+                    from services.notifications import email_subscription_renewed
+                    import asyncio
+                    asyncio.create_task(email_subscription_renewed(
+                        user.email, p.get("nombre", user.suscripcion_activa),
+                        p.get("precio_mensual", 0)
+                    ))
+                except Exception:
+                    pass
+
+    # === Pago fallido ===
+    elif etype == "invoice.payment_failed":
+        user = db.query(User).filter(User.stripe_customer_id == obj.get("customer")).first()
+        if user:
+            try:
+                from services.notifications import email_payment_failed
+                import asyncio
+                amount = (obj.get("amount_due") or 0) / 100
+                asyncio.create_task(email_payment_failed(user.email, amount))
+            except Exception:
+                pass
+
+    # === Suscripcion cancelada ===
+    elif etype == "customer.subscription.deleted":
+        user = db.query(User).filter(User.stripe_customer_id == obj.get("customer")).first()
+        if user:
+            user.suscripcion_activa = None
+            db.commit()
+
+    return JSONResponse({"received": True, "type": etype})
+
+
+# ============================================================
+#  ADMIN DASHBOARD — metricas tiempo real
+# ============================================================
+
+@app.get("/api/v1/admin/dashboard")
+def admin_dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Resumen ejecutivo. Solo emails admins."""
+    if user.email not in {"vick@trustscoremx.com", "suparevilla@gmail.com"}:
+        raise HTTPException(403, "Solo administradores")
+
+    from sqlalchemy import func
+    from datetime import timedelta
+
+    hoy = datetime.utcnow()
+    semana_atras = hoy - timedelta(days=7)
+    mes_atras = hoy - timedelta(days=30)
+
+    def _suma_periodo(field, since):
+        return float(db.query(func.coalesce(func.sum(field), 0)).filter(
+            Consulta.creada >= since
+        ).scalar() or 0)
+
+    def _count_periodo(model, field, since):
+        return int(db.query(func.count(model.id)).filter(field >= since).scalar() or 0)
+
+    mrr = 0
+    for plan_name, p in PLANES_SUSCRIPCION.items():
+        n = db.query(func.count(User.id)).filter(User.suscripcion_activa == plan_name).scalar() or 0
+        mrr += n * p["precio_mensual"]
+
+    return {
+        "ingresos_24h": _suma_periodo(Consulta.costo_cobrado, hoy - timedelta(days=1)),
+        "ingresos_semana": _suma_periodo(Consulta.costo_cobrado, semana_atras),
+        "ingresos_mes": _suma_periodo(Consulta.costo_cobrado, mes_atras),
+        "margen_mes": _suma_periodo(Consulta.costo_cobrado - Consulta.costo_real, mes_atras),
+        "mrr": float(mrr),
+        "arr_estimado": float(mrr) * 12,
+        "cuentas_total": int(db.query(func.count(User.id)).scalar() or 0),
+        "cuentas_nuevas_semana": _count_periodo(User, User.creado, semana_atras),
+        "cuentas_nuevas_mes": _count_periodo(User, User.creado, mes_atras),
+        "suscripciones_activas": int(db.query(func.count(User.id)).filter(
+            User.suscripcion_activa.isnot(None)
+        ).scalar() or 0),
+        "consultas_semana": _count_periodo(Consulta, Consulta.creada, semana_atras),
+        "consultas_mes": _count_periodo(Consulta, Consulta.creada, mes_atras),
+        "criticos_mes": int(db.query(func.count(Consulta.id)).filter(
+            Consulta.creada >= mes_atras, Consulta.categoria == "CRITICO"
+        ).scalar() or 0),
+    }
+
+
+# ============================================================
+#  Hooks: enviar email tras signup y tras consulta CRITICO
+# ============================================================

@@ -23,9 +23,15 @@ services:
         value: https://api.trustscoremx.com
       - key: FRONTEND_URL
         value: https://trustscoremx.com
+      - key: ADMIN_EMAILS
+        value: suparevilla@gmail.com
+      - key: FROM_EMAIL
+        value: TrustScore MX <noreply@trustscoremx.com>
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: RESEND_API_KEY
         sync: false
 
   # Cron: refresca OFAC SDN list cada lunes 06:00 UTC
@@ -47,6 +53,25 @@ services:
     buildCommand: pip install -r requirements.txt
     schedule: "0 6 1 * *"
     startCommand: python scripts/update_sat_69b.py
+
+  # Cron: reporte semanal a admins cada lunes 14:00 UTC (8am CDMX)
+  - type: cron
+    name: trustscoremx-weekly-report
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    schedule: "0 14 * * 1"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: trustscoremx-db
+          property: connectionString
+      - key: ADMIN_EMAILS
+        value: suparevilla@gmail.com
+      - key: RESEND_API_KEY
+        sync: false
+    startCommand: python scripts/weekly_report.py
 
 databases:
   - name: trustscoremx-db
