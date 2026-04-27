@@ -1,4 +1,4 @@
-"""Modelos de base de datos. SQLite para MVP, Postgres en producción."""
+"""Modelos de base de datos. SQLite para MVP, Postgres en produccion."""
 
 import os
 from datetime import datetime
@@ -18,7 +18,7 @@ if DATABASE_URL.startswith("postgres://"):
 engine = create_engine(
     DATABASE_URL,
     connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
-    pool_pre_ping=True,  # reconecta si la conexión Postgres se duerme
+    pool_pre_ping=True,  # reconecta si la conexion Postgres se duerme
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -32,9 +32,9 @@ class User(Base):
     empresa = Column(String, nullable=True)
     password_hash = Column(String, nullable=False)
     consultas_gratis_restantes = Column(Integer, default=5)
-    saldo_creditos = Column(Float, default=0.0)  # MXN
+    saldo_creditos = Column(Float, default=0.0)
     stripe_customer_id = Column(String, nullable=True)
-    suscripcion_activa = Column(String, nullable=True)  # "starter", "growth", "pro"
+    suscripcion_activa = Column(String, nullable=True)
     creado = Column(DateTime, default=datetime.utcnow)
 
     api_keys = relationship("ApiKey", back_populates="user", cascade="all,delete")
@@ -45,8 +45,8 @@ class ApiKey(Base):
     __tablename__ = "api_keys"
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    key_prefix = Column(String, nullable=False)   # primeros 8 chars visibles
-    key_hash = Column(String, nullable=False)     # hash del resto
+    key_prefix = Column(String, nullable=False)
+    key_hash = Column(String, nullable=False)
     nombre = Column(String, default="default")
     creada = Column(DateTime, default=datetime.utcnow)
     ultima_usada = Column(DateTime, nullable=True)
@@ -61,9 +61,24 @@ class Consulta(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     rfc_consultado = Column(String, index=True)
     nombre_consultado = Column(String, nullable=True)
-    tier = Column(String, nullable=False)  # express|estandar|profesional|enterprise
+    tier = Column(String, nullable=False)
     score = Column(Integer, nullable=True)
     categoria = Column(String, nullable=True)
     payload_completo = Column(JSON, nullable=True)
     costo_cobrado = Column(Float, default=0.0)
-    costo_
+    costo_real = Column(Float, default=0.0)
+    creada = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="consultas")
+
+
+def init_db() -> None:
+    Base.metadata.create_all(bind=engine)
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
