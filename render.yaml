@@ -12,7 +12,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.9
       - key: JWT_SECRET
-        generateValue: true       # Render genera valor aleatorio seguro
+        generateValue: true
       - key: JWT_ALG
         value: HS256
       - key: DATABASE_URL
@@ -24,9 +24,29 @@ services:
       - key: FRONTEND_URL
         value: https://trustscoremx.com
       - key: STRIPE_SECRET_KEY
-        sync: false               # se llena manual cuando configures Stripe
+        sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
+
+  # Cron: refresca OFAC SDN list cada lunes 06:00 UTC
+  - type: cron
+    name: trustscoremx-refresh-ofac
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    schedule: "0 6 * * 1"
+    startCommand: python scripts/update_ofac.py
+
+  # Cron: refresca SAT 69-B list 1ro de cada mes 06:00 UTC
+  - type: cron
+    name: trustscoremx-refresh-sat69b
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    schedule: "0 6 1 * *"
+    startCommand: python scripts/update_sat_69b.py
 
 databases:
   - name: trustscoremx-db

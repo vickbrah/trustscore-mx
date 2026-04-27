@@ -28,7 +28,7 @@ from typing import Optional, Literal
 
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
@@ -216,8 +216,10 @@ async def check_express(
     rfc = req.rfc.upper().strip()
     rfc_check = identity.validar_rfc(rfc)
     sat_69b = sat.consultar_69b(rfc)
-    dof = sat.consultar_dof(rfc, req.nombre or "")
-    bc = sat.consultar_boletin_concursal(rfc)
+    dof, bc = await asyncio.gather(
+        sat.consultar_dof_async(rfc, req.nombre or ""),
+        sat.consultar_boletin_concursal_async(rfc, req.nombre or ""),
+    )
 
     checks = {"rfc": rfc_check, "sat_69b": sat_69b, "dof": dof, "boletin_concursal": bc}
     score = scoring.calcular_score(checks)
@@ -250,10 +252,10 @@ async def check_estandar(
     rfc_check = identity.validar_rfc(rfc)
     curp_check = identity.validar_curp(req.curp) if req.curp else None
     sat_69b = sat.consultar_69b(rfc)
-    dof = sat.consultar_dof(rfc, req.nombre or "")
-    bc = sat.consultar_boletin_concursal(rfc)
 
-    ine_t, pep_t, quejas_t = await asyncio.gather(
+    dof, bc, ine_t, pep_t, quejas_t = await asyncio.gather(
+        sat.consultar_dof_async(rfc, req.nombre or ""),
+        sat.consultar_boletin_concursal_async(rfc, req.nombre or ""),
         external.verificar_ine_renapo(rfc, req.clave_ine or ""),
         external.consultar_ofac_pep(req.nombre or rfc, rfc),
         external.consultar_quejas(rfc, req.nombre or ""),
@@ -293,10 +295,10 @@ async def check_profesional(
     rfc_check = identity.validar_rfc(rfc)
     curp_check = identity.validar_curp(req.curp) if req.curp else None
     sat_69b = sat.consultar_69b(rfc)
-    dof = sat.consultar_dof(rfc, req.nombre or "")
-    bc = sat.consultar_boletin_concursal(rfc)
 
-    ine_t, pep_t, quejas_t, lit_t = await asyncio.gather(
+    dof, bc, ine_t, pep_t, quejas_t, lit_t = await asyncio.gather(
+        sat.consultar_dof_async(rfc, req.nombre or ""),
+        sat.consultar_boletin_concursal_async(rfc, req.nombre or ""),
         external.verificar_ine_renapo(rfc, req.clave_ine or ""),
         external.consultar_ofac_pep(req.nombre or rfc, rfc),
         external.consultar_quejas(rfc, req.nombre or ""),
@@ -376,6 +378,94 @@ def detalle_consulta(consulta_id: int, user: User = Depends(get_current_user), d
     return c.payload_completo
 
 
+
+# ============================================================
+#  PDF REPORTS — descarga del reporte completo
+# ============================================================
+
+@app.get("/api/v1/me/consultas/{consulta_id}/pdf")
+def consulta_pdf(
+    consulta_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Genera y descarga el PDF firmado del reporte."""
+    from services.pdf_report import generar_pdf
+    from io import BytesIO
+    c = db.query(Consulta).filter(Consulta.id == consulta_id, Consulta.user_id == user.id).first()
+    if not c:
+        raise HTTPException(404, "Consulta no encontrada")
+    pdf_bytes = generar_pdf(c.payload_completo or {}, c.id)
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="trustscore-mx-{c.rfc_consultado}-{c.id}.pdf"',
+        },
+    )
+
+
+# ============================================================
+#  ADMIN — refresh manual de listas (OFAC, SAT 69-B)
+# ============================================================
+
+@app.post("/api/v1/admin/refresh-data")
+def admin_refresh_data(
+    user: User = Depends(get_current_user),
+):
+    """
+    Forza refresco de listas publicas (OFAC, SAT 69-B). Solo super admin.
+    En produccion: agregar campo is_admin a User y verificar.
+    """
+    if user.email not in {"vick@trustscoremx.com", "suparevilla@gmail.com"}:
+        raise HTTPException(403, "Solo administradores")
+
+    import subprocess, sys
+    from pathlib import Path
+    scripts_dir = Path(__file__).parent / "scripts"
+    results = {}
+
+    # OFAC
+    try:
+        r = subprocess.run(
+            [sys.executable, str(scripts_dir / "update_ofac.py")],
+            capture_output=True, text=True, timeout=120,
+        )
+        results["ofac"] = {
+            "exit_code": r.returncode,
+            "stdout": r.stdout[-500:],
+            "stderr": r.stderr[-300:] if r.stderr else "",
+        }
+    except Exception as e:
+        results["ofac"] = {"error": str(e)}
+
+    # SAT 69-B
+    try:
+        r = subprocess.run(
+            [sys.executable, str(scripts_dir / "update_sat_69b.py")],
+            capture_output=True, text=True, timeout=120,
+        )
+        results["sat_69b"] = {
+            "exit_code": r.returncode,
+            "stdout": r.stdout[-500:],
+            "stderr": r.stderr[-300:] if r.stderr else "",
+        }
+    except Exception as e:
+        results["sat_69b"] = {"error": str(e)}
+
+    # Limpiar cache para forzar reload
+    try:
+        from services.ofac import _load_index
+        _load_index.cache_clear()
+        from services.sat import _load_69b
+        _load_69b.cache_clear()
+        results["cache_cleared"] = True
+    except Exception as e:
+        results["cache_cleared"] = str(e)
+
+    return results
+
+
 # ============================================================
 #  BILLING — Stripe
 # ============================================================
@@ -410,4 +500,13 @@ async def billing_webhook(request: Request, db: Session = Depends(get_db)):
         item = s["metadata"]["tier"]
         user = db.query(User).filter(User.id == uid).first()
         if not user:
-            return JSONR
+            return JSONResponse({"error": "user not found"}, 404)
+
+        from billing import PAQUETES_CREDITOS
+        if item in PAQUETES_CREDITOS:
+            user.saldo_creditos += PAQUETES_CREDITOS[item]["creditos"]
+        elif item in TIERS_PRICING:
+            user.saldo_creditos += TIERS_PRICING[item]["precio"]
+        db.commit()
+
+    return JSONResponse({"received": True})

@@ -72,30 +72,50 @@ def consultar_69b(rfc: str) -> Dict[str, Any]:
     }
 
 
+async def consultar_dof_async(rfc: str, nombre: str = "") -> Dict[str, Any]:
+    """
+    Busqueda real en Diario Oficial de la Federacion via scraper.
+    """
+    from .scrapers import buscar_dof
+    r = await buscar_dof(rfc, nombre)
+    r["rfc"] = rfc
+    if r.get("encontrado"):
+        r["mensaje"] = f"DOF: {len(r.get('publicaciones', []))} publicaciones encontradas con '{rfc or nombre}'."
+    else:
+        r["mensaje"] = "Sin sanciones ni inhabilitaciones publicadas en DOF."
+    return r
+
+
 def consultar_dof(rfc: str, nombre: str = "") -> Dict[str, Any]:
-    """
-    Búsqueda en Diario Oficial de la Federación (sanciones, inhabilitaciones).
-    PROD: scraper sobre https://dof.gob.mx/busqueda_avanzada.php cacheado.
-    """
+    """Version sincrona como fallback (no usada en endpoints async)."""
     return {
         "rfc": rfc,
         "encontrado": False,
         "publicaciones": [],
-        "fuente": "DOF (Diario Oficial de la Federación)",
+        "fuente": "DOF (Diario Oficial de la Federacion)",
         "mensaje": "Sin sanciones ni inhabilitaciones publicadas en DOF.",
     }
 
 
+async def consultar_boletin_concursal_async(rfc: str, nombre: str = "") -> Dict[str, Any]:
+    """Busqueda real en Boletin Concursal IFECOM via scraper."""
+    from .scrapers import buscar_boletin_concursal
+    r = await buscar_boletin_concursal(rfc, nombre)
+    r["rfc"] = rfc
+    r["mensaje"] = (
+        "Concurso mercantil activo en IFECOM" if r.get("en_concurso")
+        else "Sin proceso de concurso mercantil activo."
+    )
+    return r
+
+
 def consultar_boletin_concursal(rfc: str) -> Dict[str, Any]:
-    """
-    Búsqueda en Boletín Concursal (IFECOM) — quiebras y concursos mercantiles.
-    PROD: scraper sobre https://www.ifecom.cjf.gob.mx
-    """
+    """Version sincrona fallback."""
     return {
         "rfc": rfc,
         "en_concurso": False,
         "estado": None,
-        "fuente": "IFECOM — Boletín Concursal",
+        "fuente": "IFECOM Boletin Concursal",
         "mensaje": "Sin proceso de concurso mercantil activo.",
     }
 
@@ -108,4 +128,11 @@ def consultar_opinion_cumplimiento_32d(rfc: str) -> Dict[str, Any]:
     Aquí devolvemos el formato del reporte; en prod, el cliente sube el PDF
     de opinión positiva del proveedor que evalúa.
     """
-    retu
+    return {
+        "rfc": rfc,
+        "disponible": False,
+        "nota": (
+            "La opinión 32-D solo la genera el contribuyente con su e.firma. "
+            "Pide al evaluado que suba su opinión positiva al portal."
+        ),
+    }
