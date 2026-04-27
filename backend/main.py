@@ -26,7 +26,7 @@ import asyncio
 from datetime import datetime
 from typing import Optional, Literal
 
-from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi import FastAPI, Depends, HTTPException, status, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, EmailStr, Field
@@ -464,6 +464,186 @@ def admin_refresh_data(
         results["cache_cleared"] = str(e)
 
     return results
+
+
+
+# ============================================================
+#  ARCO — carta de consentimiento PDF
+# ============================================================
+
+class ArcoReq(BaseModel):
+    nombre_evaluado: str = Field(min_length=2)
+    rfc_evaluado: str = Field(min_length=12, max_length=13)
+    nombre_empresa: str = Field(min_length=2)
+    rfc_empresa: Optional[str] = ""
+    motivo: Optional[str] = "evaluacion comercial previa a establecer relacion contractual"
+
+
+@app.post("/api/v1/arco/generar")
+def arco_generar(req: ArcoReq, user: User = Depends(get_current_user)):
+    """Genera carta ARCO firmable y la devuelve como PDF descargable."""
+    from services.arco_pdf import generar_carta_arco
+    from io import BytesIO
+    pdf = generar_carta_arco(
+        req.nombre_evaluado, req.rfc_evaluado.upper(),
+        req.nombre_empresa, (req.rfc_empresa or "").upper(),
+        req.motivo or "",
+    )
+    return StreamingResponse(
+        BytesIO(pdf),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="arco-{req.rfc_evaluado}.pdf"'},
+    )
+
+
+# ============================================================
+#  BULK CSV — sube CSV con muchos RFCs, devuelve CSV con scores
+# ============================================================
+
+@app.post("/api/v1/check/bulk")
+async def check_bulk(
+    file: UploadFile = File(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Acepta un CSV con columnas rfc,nombre y devuelve CSV con scores.
+    Limite 500 filas. Cobra el equivalente a tier express por cada RFC.
+    """
+    from services.bulk_csv import parsear_csv_input, procesar_bulk, MAX_ROWS_PER_REQUEST
+    content = await file.read()
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(413, "Archivo demasiado grande (max 5 MB)")
+
+    rows = parsear_csv_input(content)
+    if not rows:
+        raise HTTPException(400, "CSV vacio o invalido")
+
+    costo_total = len(rows) * TIERS_PRICING["express"]["precio"]
+    if user.consultas_gratis_restantes < len(rows) and user.saldo_creditos < costo_total:
+        raise HTTPException(
+            402,
+            f"Saldo insuficiente. Bulk de {len(rows)} consultas requiere ${costo_total} MXN o {len(rows)} consultas gratis.",
+        )
+
+    csv_bytes, total, n_criticas = await procesar_bulk(rows)
+
+    # Cobrar
+    if user.consultas_gratis_restantes >= len(rows):
+        user.consultas_gratis_restantes -= len(rows)
+    else:
+        user.saldo_creditos -= costo_total
+    db.commit()
+
+    from io import BytesIO
+    return StreamingResponse(
+        BytesIO(csv_bytes),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="trustscore-bulk-{total}-results.csv"',
+            "X-Total-Procesados": str(total),
+            "X-Criticas-Encontradas": str(n_criticas),
+        },
+    )
+
+
+# ============================================================
+#  MONITORING — suscribir RFCs para alertas si cambian
+# ============================================================
+
+class MonitorReq(BaseModel):
+    rfc: str = Field(min_length=12, max_length=13)
+    webhook_url: Optional[str] = None
+
+
+@app.post("/api/v1/monitor")
+def monitor_subscribe(
+    req: MonitorReq,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Suscribe un RFC para monitoreo continuo."""
+    from services.monitoring import Monitorizacion, init_monitoring_tables
+    init_monitoring_tables()
+    rfc = req.rfc.upper().strip()
+    existing = db.query(Monitorizacion).filter(
+        Monitorizacion.user_id == user.id, Monitorizacion.rfc == rfc
+    ).first()
+    if existing:
+        existing.webhook_url = req.webhook_url or existing.webhook_url
+        existing.activa = True
+        db.commit()
+        return {"id": existing.id, "rfc": rfc, "estado": "actualizado"}
+    m = Monitorizacion(user_id=user.id, rfc=rfc, webhook_url=req.webhook_url, activa=True)
+    db.add(m); db.commit(); db.refresh(m)
+    return {"id": m.id, "rfc": rfc, "estado": "creado"}
+
+
+@app.get("/api/v1/monitor")
+def monitor_list(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Lista los RFCs que tengo monitoreados."""
+    from services.monitoring import Monitorizacion, init_monitoring_tables
+    init_monitoring_tables()
+    items = db.query(Monitorizacion).filter(
+        Monitorizacion.user_id == user.id, Monitorizacion.activa == True  # noqa
+    ).all()
+    return [
+        {"id": m.id, "rfc": m.rfc, "last_score": m.last_score,
+         "last_categoria": m.last_categoria, "webhook_url": m.webhook_url,
+         "creada": m.creada.isoformat() if m.creada else None}
+        for m in items
+    ]
+
+
+@app.delete("/api/v1/monitor/{monitor_id}")
+def monitor_unsubscribe(
+    monitor_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    from services.monitoring import Monitorizacion
+    m = db.query(Monitorizacion).filter(
+        Monitorizacion.id == monitor_id, Monitorizacion.user_id == user.id
+    ).first()
+    if not m:
+        raise HTTPException(404, "Monitor no encontrado")
+    m.activa = False
+    db.commit()
+    return {"id": m.id, "estado": "desactivado"}
+
+
+# ============================================================
+#  /me/usage — metricas de uso por API key / usuario
+# ============================================================
+
+@app.get("/api/v1/me/usage")
+def me_usage(
+    days: int = 30,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Resumen de uso del usuario."""
+    from datetime import timedelta
+    from sqlalchemy import func
+    desde = datetime.utcnow() - timedelta(days=days)
+    consultas_total = db.query(func.count(Consulta.id)).filter(
+        Consulta.user_id == user.id, Consulta.creada >= desde
+    ).scalar() or 0
+    consultas_por_tier = db.query(
+        Consulta.tier, func.count(Consulta.id), func.sum(Consulta.costo_cobrado)
+    ).filter(
+        Consulta.user_id == user.id, Consulta.creada >= desde
+    ).group_by(Consulta.tier).all()
+    return {
+        "periodo_dias": days,
+        "consultas_total": consultas_total,
+        "por_tier": [
+            {"tier": t, "n": int(n), "total_pagado": float(s or 0)}
+            for t, n, s in consultas_por_tier
+        ],
+        "saldo_actual": user.saldo_creditos,
+        "consultas_gratis_restantes": user.consultas_gratis_restantes,
+    }
 
 
 # ============================================================
