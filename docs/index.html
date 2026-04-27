@@ -1,733 +1,927 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="scroll-smooth">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>TrustScore MX — Verifica antes de hacer negocio</title>
-<meta name="description" content="API de score de confianza para México. Verifica RFC, identidad, listas negras del SAT, demandas y buró en segundos antes de hacer negocios." />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>TrustScore MX — Risk intelligence para hacer negocios en México</title>
+<meta name="description" content="Convierte señales de SAT, OFAC, sanciones y reputación en un score de confianza claro. Decide con quién hacer negocios antes de mover dinero." />
+<meta property="og:title" content="TrustScore MX — Risk intelligence para hacer negocios" />
+<meta property="og:description" content="Score de confianza B2B para reducir riesgo al contratar, invertir o asociarte." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://trustscoremx.com" />
+
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
+          mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        },
+        colors: {
+          ink: { 50:'#F8FAFC',100:'#F1F5F9',200:'#E2E8F0',300:'#CBD5E1',400:'#94A3B8',500:'#64748B',600:'#475569',700:'#334155',800:'#1E293B',900:'#0F172A',950:'#020617' },
+          brand: { 50:'#EFF6FF',100:'#DBEAFE',500:'#3B82F6',600:'#2563EB',700:'#1D4ED8',800:'#1E40AF',900:'#1E3A8A' },
+          accent: { 400:'#34D399',500:'#10B981',600:'#059669' },
+          danger: { 50:'#FEF2F2',500:'#EF4444',600:'#DC2626',700:'#B91C1C' },
+          warn: { 50:'#FFFBEB',500:'#F59E0B',600:'#D97706' },
+        },
+        animation: {
+          'fade-up': 'fadeUp 0.7s ease-out forwards',
+          'fade-in': 'fadeIn 0.6s ease-out forwards',
+          'slow-pulse': 'slowPulse 3s ease-in-out infinite',
+          'gauge-fill': 'gaugeFill 1.6s cubic-bezier(.16,1,.3,1) forwards',
+          'shimmer': 'shimmer 2s linear infinite',
+        },
+        keyframes: {
+          fadeUp: { '0%': { opacity:0, transform:'translateY(16px)' }, '100%': { opacity:1, transform:'translateY(0)' } },
+          fadeIn: { '0%': { opacity:0 }, '100%': { opacity:1 } },
+          slowPulse: { '0%,100%':{ opacity:0.6 }, '50%':{ opacity:1 } },
+          gaugeFill: { '0%': { strokeDashoffset:'339' }, '100%': { strokeDashoffset:'45' } },
+          shimmer: { '0%':{ backgroundPosition:'-200% 0' }, '100%':{ backgroundPosition:'200% 0' } },
+        },
+      },
+    },
+  };
+</script>
+
 <style>
-  :root {
-    --navy: #0A2540;
-    --navy-2: #0E2E54;
-    --blue: #0070F3;
-    --blue-2: #2D8CFF;
-    --blue-bg: #EDF4FF;
-    --white: #FFFFFF;
-    --gray-50: #F6F9FC;
-    --gray-100: #EEF1F6;
-    --gray-200: #DCE2EC;
-    --gray-300: #B8C2D2;
-    --gray-500: #6B7A90;
-    --gray-700: #3C4B61;
-    --green: #00A36C;
-    --green-bg: #E6F7F0;
-    --red: #E5484D;
-    --red-bg: #FDECEC;
-    --amber: #F5A524;
-    --amber-bg: #FEF6E6;
-    --shadow-sm: 0 1px 2px rgba(10,37,64,.06), 0 1px 3px rgba(10,37,64,.04);
-    --shadow-md: 0 4px 6px rgba(10,37,64,.05), 0 10px 24px rgba(10,37,64,.08);
-    --shadow-lg: 0 12px 30px rgba(10,37,64,.10), 0 30px 60px rgba(10,37,64,.10);
-    --radius: 14px;
-    --radius-lg: 22px;
+  body { font-feature-settings: 'cv02','cv03','cv04','cv11'; -webkit-font-smoothing:antialiased; }
+  .text-balance { text-wrap: balance; }
+  .text-pretty  { text-wrap: pretty; }
+
+  /* ambient gradient orbs */
+  .orb { position:absolute; border-radius:9999px; filter:blur(72px); pointer-events:none; opacity:.55; }
+
+  /* dotted grid */
+  .grid-dots { background-image: radial-gradient(circle at 1px 1px, rgba(15,23,42,.06) 1px, transparent 0); background-size: 18px 18px; }
+
+  /* score gauge */
+  .gauge-track { stroke: #E2E8F0; }
+  .gauge-fill  { transform: rotate(-90deg); transform-origin: center; }
+
+  /* shimmer button */
+  .shimmer-btn {
+    background: linear-gradient(110deg, #0F172A 0%, #1E293B 45%, #334155 50%, #1E293B 55%, #0F172A 100%);
+    background-size: 200% 100%;
   }
 
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
-    margin: 0;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    color: var(--navy);
-    background: var(--white);
-    -webkit-font-smoothing: antialiased;
-    line-height: 1.6;
-  }
+  /* card hover lift */
+  .lift { transition: transform .25s cubic-bezier(.16,1,.3,1), box-shadow .25s; }
+  .lift:hover { transform: translateY(-3px); box-shadow: 0 20px 40px -20px rgba(15,23,42,.18), 0 8px 16px -8px rgba(15,23,42,.08); }
 
-  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  /* logo cloud fade */
+  .logo-fade { mask-image: linear-gradient(90deg, transparent, black 12%, black 88%, transparent); }
 
-  /* NAV */
-  nav {
-    position: sticky; top: 0; z-index: 100;
-    background: rgba(255,255,255,.85);
-    backdrop-filter: saturate(180%) blur(14px);
-    -webkit-backdrop-filter: saturate(180%) blur(14px);
-    border-bottom: 1px solid var(--gray-100);
-  }
-  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 68px; }
-  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; color: var(--navy); text-decoration: none; }
-  .logo-mark {
-    width: 32px; height: 32px; border-radius: 9px;
-    background: linear-gradient(135deg, var(--blue) 0%, var(--navy) 100%);
-    display: grid; place-items: center;
-    box-shadow: 0 4px 12px rgba(0,112,243,.35);
-  }
-  .logo-mark svg { width: 18px; height: 18px; color: white; }
-  .nav-links { display: flex; gap: 28px; }
-  .nav-links a { color: var(--gray-700); text-decoration: none; font-size: 14.5px; font-weight: 500; }
-  .nav-links a:hover { color: var(--navy); }
-  .nav-cta { display: flex; gap: 10px; align-items: center; }
+  /* reveal-on-scroll */
+  [data-reveal] { opacity: 0; transform: translateY(20px); transition: opacity .7s ease-out, transform .7s ease-out; }
+  [data-reveal].is-visible { opacity: 1; transform: translateY(0); }
 
-  /* BUTTONS */
-  .btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 11px 20px; border-radius: 10px;
-    font-weight: 600; font-size: 14.5px; text-decoration: none;
-    border: 1px solid transparent; cursor: pointer;
-    transition: all .18s ease;
-    font-family: inherit;
-  }
-  .btn-primary { background: var(--blue); color: white; box-shadow: 0 4px 14px rgba(0,112,243,.3); }
-  .btn-primary:hover { background: #005FD6; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,112,243,.4); }
-  .btn-ghost { background: transparent; color: var(--navy); border-color: var(--gray-200); }
-  .btn-ghost:hover { background: var(--gray-50); }
-  .btn-link { background: transparent; color: var(--navy); padding: 8px 12px; }
-  .btn-link:hover { color: var(--blue); }
-  .btn-lg { padding: 14px 26px; font-size: 15.5px; }
-
-  /* HERO */
-  .hero {
-    padding: 88px 0 80px;
-    background:
-      radial-gradient(1200px 600px at 80% -10%, rgba(0,112,243,.10), transparent 60%),
-      radial-gradient(800px 400px at -10% 30%, rgba(0,112,243,.06), transparent 60%),
-      linear-gradient(180deg, #FBFCFE 0%, #FFFFFF 100%);
-    position: relative; overflow: hidden;
-  }
-  .hero-grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: 60px; align-items: center; }
-  .badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: var(--blue-bg); color: var(--blue);
-    padding: 6px 12px; border-radius: 999px;
-    font-size: 13px; font-weight: 600; margin-bottom: 20px;
-  }
-  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
-  h1 {
-    font-size: 58px; line-height: 1.05; margin: 0 0 22px;
-    letter-spacing: -1.5px; font-weight: 800;
-  }
-  h1 .grad {
-    background: linear-gradient(90deg, var(--blue) 0%, #6E5BFF 100%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
-  .hero-sub { font-size: 19px; color: var(--gray-700); margin: 0 0 32px; max-width: 520px; }
-  .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 32px; }
-  .hero-trust { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; color: var(--gray-500); font-size: 13.5px; }
-  .hero-trust svg { color: var(--green); }
-
-  /* HERO VISUAL — score card */
-  .score-card {
-    background: white; border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    padding: 28px; position: relative;
-    border: 1px solid var(--gray-100);
-  }
-  .score-card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-  .score-card-head .who { font-size: 13px; color: var(--gray-500); margin-bottom: 4px; }
-  .score-card-head .name { font-weight: 700; font-size: 17px; }
-  .score-card-head .rfc { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--gray-700); margin-top: 2px; }
-  .score-pill {
-    background: var(--green-bg); color: var(--green);
-    padding: 6px 12px; border-radius: 999px;
-    font-size: 12.5px; font-weight: 700;
-    display: flex; align-items: center; gap: 6px;
-  }
-
-  .gauge { display: flex; align-items: center; gap: 24px; padding: 14px 0; }
-  .gauge-svg { width: 130px; height: 130px; flex-shrink: 0; }
-  .gauge-svg .bg { stroke: var(--gray-100); }
-  .gauge-svg .fg { stroke: url(#scoreGrad); stroke-linecap: round; transform: rotate(-90deg); transform-origin: center; }
-  .gauge-num { font-size: 38px; font-weight: 800; letter-spacing: -1.5px; }
-  .gauge-label { font-size: 13px; color: var(--gray-500); }
-  .gauge-side { flex: 1; }
-  .gauge-side .recommend { font-size: 13px; color: var(--gray-500); margin-bottom: 4px; }
-  .gauge-side .verdict { font-size: 19px; font-weight: 700; color: var(--green); margin-bottom: 8px; }
-  .gauge-side .verdict-sub { font-size: 13.5px; color: var(--gray-700); }
-
-  .checks { display: grid; gap: 8px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--gray-100); }
-  .check-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 12px; background: var(--gray-50); border-radius: 10px;
-    font-size: 13.5px;
-  }
-  .check-row .label { color: var(--gray-700); display: flex; align-items: center; gap: 10px; }
-  .check-row.ok .icon { color: var(--green); }
-  .check-row.warn .icon { color: var(--amber); }
-  .check-row.bad .icon { color: var(--red); }
-  .check-row .status { font-weight: 600; }
-  .check-row.ok .status { color: var(--green); }
-  .check-row.warn .status { color: var(--amber); }
-  .check-row.bad .status { color: var(--red); }
-
-  /* TRUST STRIP */
-  .strip { padding: 36px 0; border-top: 1px solid var(--gray-100); border-bottom: 1px solid var(--gray-100); background: var(--gray-50); }
-  .strip-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; align-items: center; }
-  .strip-item { text-align: center; }
-  .strip-num { font-size: 30px; font-weight: 800; color: var(--navy); letter-spacing: -1px; }
-  .strip-label { font-size: 13px; color: var(--gray-500); margin-top: 4px; }
-
-  /* SECTION DEFAULTS */
-  section { padding: 96px 0; }
-  .section-tag {
-    text-transform: uppercase; letter-spacing: 1.5px;
-    font-size: 12.5px; font-weight: 700; color: var(--blue);
-    margin-bottom: 14px;
-  }
-  .section-title { font-size: 42px; line-height: 1.1; margin: 0 0 18px; letter-spacing: -1px; font-weight: 800; }
-  .section-sub { font-size: 18px; color: var(--gray-500); max-width: 640px; margin: 0; }
-  .section-head-center { text-align: center; max-width: 700px; margin: 0 auto 56px; }
-  .section-head-center .section-sub { margin: 0 auto; }
-
-  /* VALUE PROPS */
-  .props { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-  .prop-card {
-    background: white; border: 1px solid var(--gray-100);
-    border-radius: var(--radius); padding: 32px;
-    transition: all .2s ease;
-  }
-  .prop-card:hover { border-color: var(--gray-200); transform: translateY(-2px); box-shadow: var(--shadow-md); }
-  .prop-icon {
-    width: 48px; height: 48px; border-radius: 12px;
-    background: var(--blue-bg); color: var(--blue);
-    display: grid; place-items: center; margin-bottom: 18px;
-  }
-  .prop-icon svg { width: 24px; height: 24px; }
-  .prop-card h3 { margin: 0 0 8px; font-size: 19px; font-weight: 700; }
-  .prop-card p { margin: 0; color: var(--gray-700); font-size: 14.5px; }
-
-  /* USE CASES */
-  .uses-bg { background: var(--gray-50); }
-  .uses { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-  .use-card {
-    background: white; border-radius: var(--radius);
-    padding: 28px; border: 1px solid var(--gray-100);
-    display: flex; gap: 18px; align-items: flex-start;
-  }
-  .use-card .emoji { font-size: 28px; }
-  .use-card h4 { margin: 0 0 6px; font-size: 17px; font-weight: 700; }
-  .use-card p { margin: 0; color: var(--gray-700); font-size: 14.5px; }
-
-  /* HOW IT WORKS */
-  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; position: relative; }
-  .step {
-    text-align: center; padding: 32px 22px;
-    background: white; border-radius: var(--radius);
-    border: 1px solid var(--gray-100);
-    position: relative;
-  }
-  .step-num {
-    width: 38px; height: 38px; border-radius: 50%;
-    background: var(--navy); color: white;
-    display: grid; place-items: center;
-    font-weight: 800; font-size: 16px;
-    margin: 0 auto 16px;
-  }
-  .step h4 { margin: 0 0 8px; font-size: 18px; font-weight: 700; }
-  .step p { margin: 0; color: var(--gray-700); font-size: 14.5px; }
-
-  /* PRICING */
-  .pricing-bg { background: linear-gradient(180deg, var(--gray-50) 0%, white 100%); }
-  .tiers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
-  .tier {
-    background: white; border: 1px solid var(--gray-100);
-    border-radius: var(--radius); padding: 28px 24px;
-    display: flex; flex-direction: column;
-  }
-  .tier.featured {
-    border-color: var(--blue); box-shadow: 0 16px 40px rgba(0,112,243,.18);
-    position: relative; transform: scale(1.02);
-  }
-  .tier.featured::before {
-    content: 'MÁS POPULAR';
-    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
-    background: var(--blue); color: white;
-    font-size: 11px; font-weight: 700; letter-spacing: 1px;
-    padding: 5px 12px; border-radius: 999px;
-  }
-  .tier h3 { margin: 0 0 4px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--gray-500); }
-  .tier .price { margin: 12px 0 4px; font-size: 36px; font-weight: 800; letter-spacing: -1.5px; }
-  .tier .price small { font-size: 14px; font-weight: 500; color: var(--gray-500); }
-  .tier .price-sub { font-size: 13px; color: var(--gray-500); margin-bottom: 18px; }
-  .tier ul { list-style: none; padding: 0; margin: 14px 0 22px; flex-grow: 1; }
-  .tier li {
-    padding: 7px 0; font-size: 13.5px; color: var(--gray-700);
-    display: flex; align-items: flex-start; gap: 9px;
-  }
-  .tier li svg { color: var(--green); flex-shrink: 0; margin-top: 3px; }
-  .tier .btn { width: 100%; justify-content: center; }
-  .tier.coming .btn { background: var(--gray-100); color: var(--gray-500); cursor: not-allowed; box-shadow: none; }
-
-  /* FAQ */
-  details {
-    border-bottom: 1px solid var(--gray-100); padding: 22px 0;
-    cursor: pointer;
-  }
-  details summary {
-    font-weight: 600; font-size: 17px; list-style: none;
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  details summary::-webkit-details-marker { display: none; }
-  details summary::after {
-    content: '+'; font-size: 22px; color: var(--gray-500);
-    transition: transform .2s ease;
-  }
-  details[open] summary::after { content: '−'; }
-  details p { margin: 14px 0 0; color: var(--gray-700); font-size: 15px; }
-
-  /* CTA */
-  .cta-section {
-    background: linear-gradient(135deg, var(--navy) 0%, #14365C 100%);
-    color: white; border-radius: 28px;
-    padding: 64px 48px; text-align: center;
-    margin: 0 24px;
-    position: relative; overflow: hidden;
-  }
-  .cta-section::before {
-    content: ''; position: absolute;
-    top: -50%; right: -10%;
-    width: 600px; height: 600px;
-    background: radial-gradient(circle, rgba(0,112,243,.3) 0%, transparent 60%);
-    pointer-events: none;
-  }
-  .cta-section h2 { font-size: 40px; margin: 0 0 14px; letter-spacing: -1px; position: relative; }
-  .cta-section p { font-size: 17px; color: rgba(255,255,255,.75); margin: 0 0 28px; position: relative; }
-  .cta-section .btn-primary { background: white; color: var(--navy); position: relative; }
-  .cta-section .btn-primary:hover { background: var(--gray-50); }
-
-  /* FOOTER */
-  footer { padding: 56px 0 36px; background: var(--navy); color: rgba(255,255,255,.7); margin-top: 96px; }
-  footer .footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 36px; }
-  footer h5 { color: white; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 14px; }
-  footer ul { list-style: none; padding: 0; margin: 0; }
-  footer li { padding: 5px 0; font-size: 14px; }
-  footer a { color: rgba(255,255,255,.7); text-decoration: none; }
-  footer a:hover { color: white; }
-  .footer-bottom { padding-top: 24px; border-top: 1px solid rgba(255,255,255,.1); display: flex; justify-content: space-between; font-size: 13px; }
-
-  /* RESPONSIVE */
-  @media (max-width: 960px) {
-    h1 { font-size: 42px; }
-    .hero-grid { grid-template-columns: 1fr; }
-    .props, .steps { grid-template-columns: 1fr; }
-    .uses { grid-template-columns: 1fr; }
-    .tiers { grid-template-columns: repeat(2, 1fr); }
-    .strip-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
-    .nav-links { display: none; }
-    section { padding: 64px 0; }
-    .section-title { font-size: 32px; }
-    footer .footer-grid { grid-template-columns: 1fr 1fr; }
-  }
-  @media (max-width: 560px) {
-    .tiers { grid-template-columns: 1fr; }
-    .tier.featured { transform: none; }
-    h1 { font-size: 36px; }
-    .gauge { flex-direction: column; align-items: flex-start; }
-  }
+  /* details summary chevron */
+  details summary::-webkit-details-marker { display:none; }
+  details[open] .accordion-chevron { transform: rotate(180deg); }
 </style>
 </head>
-<body>
 
-<!-- NAV -->
-<nav>
-  <div class="container nav-inner">
-    <a href="#" class="logo">
-      <span class="logo-mark">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L4 6 V11 C4 16 7 20 12 22 C17 20 20 16 20 11 V6 Z"/><path d="M9 12 L11 14 L15 10"/></svg>
+<body class="bg-white text-ink-900 font-sans antialiased">
+
+<!-- ================= NAV ================= -->
+<header class="sticky top-0 z-50 backdrop-blur-md bg-white/80 border-b border-ink-100">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8 h-16 flex items-center justify-between">
+    <a href="#" class="flex items-center gap-2.5 group">
+      <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-ink-900 to-brand-700 shadow-md shadow-ink-900/20">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-white"><path d="M12 2 L4 6 V11 C4 16 7 20 12 22 C17 20 20 16 20 11 V6 Z"/><path d="M9 12 L11 14 L15 10"/></svg>
       </span>
-      TrustScore <span style="color:var(--blue)">MX</span>
+      <span class="font-semibold tracking-tight text-[17px]">TrustScore <span class="text-brand-600">MX</span></span>
     </a>
-    <div class="nav-links">
-      <a href="#producto">Producto</a>
-      <a href="#casos">Casos de uso</a>
-      <a href="#como">Cómo funciona</a>
-      <a href="#precios">Precios</a>
-      <a href="#faq">FAQ</a>
-    </div>
-    <div class="nav-cta">
-      <a href="login.html" class="btn btn-link">Iniciar sesión</a>
-      <a href="#precios" class="btn btn-primary">Empezar gratis</a>
-    </div>
-  </div>
-</nav>
 
-<!-- HERO -->
-<header class="hero">
-  <div class="container hero-grid">
-    <div>
-      <span class="badge"><span class="badge-dot"></span> Nuevo · Score con datos del SAT en tiempo real</span>
-      <h1>Verifica antes de hacer <span class="grad">negocio</span> con cualquiera.</h1>
-      <p class="hero-sub">
-        TrustScore MX te da en segundos un puntaje de confianza sobre cualquier persona o empresa en México. Cruzamos SAT, INE, listas negras, demandas y buró para que no le des anticipo al wey equivocado.
-      </p>
-      <div class="hero-ctas">
-        <a href="#precios" class="btn btn-primary btn-lg">Verificar a alguien ahora →</a>
-        <a href="#como" class="btn btn-ghost btn-lg">Ver cómo funciona</a>
-      </div>
-      <div class="hero-trust">
-        <span style="display:flex;align-items:center;gap:6px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> 5 consultas gratis al mes</span>
-        <span style="display:flex;align-items:center;gap:6px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Sin tarjeta para iniciar</span>
-        <span style="display:flex;align-items:center;gap:6px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Cumple LFPDPPP</span>
-      </div>
-    </div>
+    <nav class="hidden md:flex items-center gap-8 text-sm text-ink-600">
+      <a href="#producto"   class="hover:text-ink-900 transition">Producto</a>
+      <a href="#como"       class="hover:text-ink-900 transition">Cómo funciona</a>
+      <a href="#demo"       class="hover:text-ink-900 transition">Demo</a>
+      <a href="#casos"      class="hover:text-ink-900 transition">Casos de uso</a>
+      <a href="#precios"    class="hover:text-ink-900 transition">Precios</a>
+      <a href="https://api.trustscoremx.com/docs" target="_blank" rel="noopener" class="hover:text-ink-900 transition flex items-center gap-1">API <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7M17 7H8M17 7V16"/></svg></a>
+    </nav>
 
-    <!-- DEMO SCORE CARD -->
-    <div class="score-card">
-      <div class="score-card-head">
-        <div>
-          <div class="who">REPORTE TRUSTSCORE</div>
-          <div class="name">Comercializadora Beta SA de CV</div>
-          <div class="rfc">RFC: CBE140502K71</div>
-        </div>
-        <div class="score-pill">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Confiable
-        </div>
-      </div>
-
-      <div class="gauge">
-        <svg class="gauge-svg" viewBox="0 0 120 120">
-          <defs>
-            <linearGradient id="scoreGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#0070F3"/>
-              <stop offset="100%" stop-color="#00A36C"/>
-            </linearGradient>
-          </defs>
-          <circle class="bg" cx="60" cy="60" r="50" fill="none" stroke-width="10"/>
-          <circle class="fg" cx="60" cy="60" r="50" fill="none" stroke-width="10"
-                  stroke-dasharray="314" stroke-dashoffset="62"/>
-          <text x="60" y="58" text-anchor="middle" font-family="Inter" font-weight="800" font-size="28" fill="#0A2540">847</text>
-          <text x="60" y="76" text-anchor="middle" font-family="Inter" font-size="11" fill="#6B7A90">de 1000</text>
-        </svg>
-        <div class="gauge-side">
-          <div class="recommend">RECOMENDACIÓN</div>
-          <div class="verdict">Procede con confianza</div>
-          <div class="verdict-sub">Sin banderas rojas críticas. Histórico fiscal limpio. Apto para crédito comercial moderado.</div>
-        </div>
-      </div>
-
-      <div class="checks">
-        <div class="check-row ok">
-          <span class="label"><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Lista 69-B SAT (EFOS/EDOS)</span>
-          <span class="status">No aparece</span>
-        </div>
-        <div class="check-row ok">
-          <span class="label"><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Identidad INE / RFC</span>
-          <span class="status">Validado</span>
-        </div>
-        <div class="check-row warn">
-          <span class="label"><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>Quejas CONDUSEF</span>
-          <span class="status">2 leves</span>
-        </div>
-        <div class="check-row ok">
-          <span class="label"><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>OFAC / PEP</span>
-          <span class="status">Sin coincidencias</span>
-        </div>
-        <div class="check-row ok">
-          <span class="label"><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Boletín Concursal</span>
-          <span class="status">Sin quiebra</span>
-        </div>
-      </div>
+    <div class="flex items-center gap-2">
+      <a href="dashboard.html" class="hidden sm:inline-flex items-center text-sm font-medium text-ink-700 hover:text-ink-900 px-3 py-1.5 transition">Iniciar sesión</a>
+      <a href="#demo" class="inline-flex items-center gap-1.5 text-sm font-semibold bg-ink-900 text-white px-4 py-2 rounded-lg hover:bg-ink-800 shimmer-btn animate-shimmer transition">
+        Probar gratis
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
     </div>
   </div>
 </header>
 
-<!-- TRUST STRIP -->
-<section class="strip" style="padding: 36px 0;">
-  <div class="container strip-grid">
-    <div class="strip-item">
-      <div class="strip-num">8+</div>
-      <div class="strip-label">Fuentes oficiales conectadas</div>
-    </div>
-    <div class="strip-item">
-      <div class="strip-num">&lt;3 seg</div>
-      <div class="strip-label">Tiempo promedio de consulta</div>
-    </div>
-    <div class="strip-item">
-      <div class="strip-num">100%</div>
-      <div class="strip-label">Cumplimiento LFPDPPP</div>
-    </div>
-    <div class="strip-item">
-      <div class="strip-num">99.9%</div>
-      <div class="strip-label">Uptime SLA</div>
+<!-- ================= HERO ================= -->
+<section class="relative overflow-hidden border-b border-ink-100">
+  <div class="absolute inset-0 grid-dots"></div>
+  <div class="orb w-[520px] h-[520px] -top-32 -right-20 bg-brand-500/15"></div>
+  <div class="orb w-[420px] h-[420px] top-40 -left-32 bg-accent-400/15"></div>
+
+  <div class="relative max-w-7xl mx-auto px-6 lg:px-8 pt-20 pb-24 lg:pt-28 lg:pb-32">
+    <div class="grid lg:grid-cols-12 gap-12 items-center">
+
+      <div class="lg:col-span-7" data-reveal>
+        <div class="inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white px-3 py-1 text-xs font-medium text-ink-700 mb-7">
+          <span class="relative flex h-2 w-2">
+            <span class="absolute inline-flex h-full w-full rounded-full bg-accent-500 opacity-70 animate-ping"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-accent-500"></span>
+          </span>
+          Live · Cruzando 18,864 sanciones OFAC en tiempo real
+        </div>
+
+        <h1 class="text-balance text-[44px] sm:text-5xl lg:text-[64px] leading-[1.05] font-extrabold tracking-tight text-ink-900">
+          Evalúa la <span class="bg-gradient-to-r from-brand-700 to-accent-600 bg-clip-text text-transparent">confianza</span><br class="hidden sm:block" />
+          antes de hacer negocios.
+        </h1>
+
+        <p class="mt-6 text-pretty text-lg lg:text-xl text-ink-600 max-w-xl leading-relaxed">
+          TrustScore MX convierte señales reales — SAT 69-B, OFAC, listas negras, historial reputacional — en un score claro para reducir riesgo al contratar, invertir o asociarte.
+        </p>
+
+        <div class="mt-9 flex flex-wrap items-center gap-3">
+          <a href="#demo" class="group inline-flex items-center gap-2 bg-ink-900 hover:bg-ink-950 text-white font-semibold px-5 py-3 rounded-lg shadow-lg shadow-ink-900/15 transition">
+            Consultar perfil
+            <svg class="w-4 h-4 transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </a>
+          <a href="#como" class="inline-flex items-center gap-2 border border-ink-200 hover:border-ink-300 hover:bg-ink-50 font-medium px-5 py-3 rounded-lg transition">
+            Ver cómo funciona
+          </a>
+        </div>
+
+        <div class="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-ink-500">
+          <span class="inline-flex items-center gap-1.5"><svg class="w-4 h-4 text-accent-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg> Sin tarjeta</span>
+          <span class="inline-flex items-center gap-1.5"><svg class="w-4 h-4 text-accent-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg> Resultado en &lt; 3 seg</span>
+          <span class="inline-flex items-center gap-1.5"><svg class="w-4 h-4 text-accent-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg> Cumple LFPDPPP</span>
+        </div>
+      </div>
+
+      <!-- HERO SCORE CARD -->
+      <div class="lg:col-span-5" data-reveal style="transition-delay: .15s;">
+        <div class="relative">
+          <div class="absolute -inset-3 bg-gradient-to-tr from-brand-500/20 via-transparent to-accent-500/20 rounded-3xl blur-2xl"></div>
+          <div class="relative bg-white border border-ink-200 rounded-2xl shadow-2xl shadow-ink-900/10 overflow-hidden">
+
+            <div class="flex items-start justify-between px-6 pt-6">
+              <div>
+                <div class="text-[11px] uppercase tracking-widest text-ink-400 font-semibold">REPORTE TRUSTSCORE</div>
+                <div class="text-ink-900 font-semibold mt-0.5 text-[17px]">Comercializadora Beta SA de CV</div>
+                <div class="text-xs font-mono text-ink-500 mt-0.5">RFC: CBE140502K71</div>
+              </div>
+              <span class="inline-flex items-center gap-1.5 bg-accent-500/10 text-accent-600 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+                Confiable
+              </span>
+            </div>
+
+            <div class="px-6 pt-5 pb-6 flex items-center gap-6">
+              <div class="relative w-32 h-32 flex-shrink-0">
+                <svg viewBox="0 0 120 120" class="w-full h-full">
+                  <defs>
+                    <linearGradient id="grad-hero" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stop-color="#1D4ED8"/>
+                      <stop offset="100%" stop-color="#10B981"/>
+                    </linearGradient>
+                  </defs>
+                  <circle cx="60" cy="60" r="54" class="gauge-track" stroke-width="10" fill="none" />
+                  <circle cx="60" cy="60" r="54" stroke="url(#grad-hero)" stroke-width="10" fill="none" stroke-linecap="round"
+                          stroke-dasharray="339" stroke-dashoffset="339" class="gauge-fill animate-gauge-fill" style="--score-offset:80"/>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                  <div class="text-3xl font-extrabold tracking-tight text-ink-900" data-counter data-target="87">0</div>
+                  <div class="text-[10px] uppercase tracking-wider text-ink-400 font-semibold">de 100</div>
+                </div>
+              </div>
+              <div class="flex-1">
+                <div class="text-[11px] uppercase tracking-wider text-ink-400 font-semibold">RECOMENDACIÓN</div>
+                <div class="text-xl font-bold text-accent-600 mt-1">Procede con confianza</div>
+                <p class="mt-1.5 text-sm text-ink-600 leading-snug">Sin banderas críticas. Histórico fiscal limpio. Apto para crédito comercial moderado.</p>
+              </div>
+            </div>
+
+            <div class="border-t border-ink-100 divide-y divide-ink-100">
+              <div class="flex items-center justify-between px-6 py-3 text-sm">
+                <span class="flex items-center gap-2 text-ink-700"><span class="w-1.5 h-1.5 rounded-full bg-accent-500"></span>SAT 69-B (lista negra)</span>
+                <span class="font-semibold text-accent-600">No aparece</span>
+              </div>
+              <div class="flex items-center justify-between px-6 py-3 text-sm">
+                <span class="flex items-center gap-2 text-ink-700"><span class="w-1.5 h-1.5 rounded-full bg-accent-500"></span>OFAC SDN / sanciones</span>
+                <span class="font-semibold text-accent-600">Sin coincidencias</span>
+              </div>
+              <div class="flex items-center justify-between px-6 py-3 text-sm">
+                <span class="flex items-center gap-2 text-ink-700"><span class="w-1.5 h-1.5 rounded-full bg-warn-500"></span>Quejas CONDUSEF</span>
+                <span class="font-semibold text-warn-600">2 leves</span>
+              </div>
+              <div class="flex items-center justify-between px-6 py-3 text-sm">
+                <span class="flex items-center gap-2 text-ink-700"><span class="w-1.5 h-1.5 rounded-full bg-accent-500"></span>Boletín Concursal</span>
+                <span class="font-semibold text-accent-600">Sin quiebra</span>
+              </div>
+            </div>
+
+            <div class="px-6 py-3 bg-ink-50 border-t border-ink-100 flex items-center justify-between text-[11px] text-ink-500">
+              <span>Verificación auditable · 8 fuentes oficiales</span>
+              <span class="font-mono">#TS-2026-04827</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </section>
 
-<!-- VALUE PROPS -->
-<section id="producto">
-  <div class="container">
-    <div class="section-head-center">
-      <div class="section-tag">Por qué TrustScore</div>
-      <h2 class="section-title">Decisiones de negocio sin venda en los ojos.</h2>
-      <p class="section-sub">Dejas de operar con corazonadas. Cada consulta cruza fuentes oficiales mexicanas y devuelve un score auditable que puedes archivar como evidencia.</p>
-    </div>
-
-    <div class="props">
-      <div class="prop-card">
-        <div class="prop-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        </div>
-        <h3>Resultado en segundos</h3>
-        <p>Una API o un dashboard. Capturas el RFC y obtienes el score completo antes de que se enfríe el café. Sin esperar 3 días al despacho.</p>
-      </div>
-      <div class="prop-card">
-        <div class="prop-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </div>
-        <h3>Datos oficiales, no chismes</h3>
-        <p>Cruzamos directo con SAT, Renapo, DOF, CONDUSEF, OFAC y buró. Cero scraping de redes sociales, cero información especulativa.</p>
-      </div>
-      <div class="prop-card">
-        <div class="prop-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-        </div>
-        <h3>Cumple con la ley</h3>
-        <p>Modelo de consentimiento ARCO, aviso de privacidad robusto, contratos preparados para B2B. Tú haces negocio, nosotros cubrimos el flanco legal.</p>
-      </div>
+<!-- ================= LOGO STRIP ================= -->
+<section class="border-b border-ink-100 bg-white py-10">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8">
+    <div class="text-center text-xs font-semibold uppercase tracking-widest text-ink-400 mb-7">Construido sobre fuentes oficiales</div>
+    <div class="logo-fade flex items-center justify-center gap-x-12 gap-y-6 flex-wrap text-ink-500">
+      <span class="text-base font-bold tracking-tight">SAT</span>
+      <span class="opacity-30">·</span>
+      <span class="text-base font-bold tracking-tight">OFAC SDN</span>
+      <span class="opacity-30">·</span>
+      <span class="text-base font-bold tracking-tight">Renapo / INE</span>
+      <span class="opacity-30">·</span>
+      <span class="text-base font-bold tracking-tight">DOF</span>
+      <span class="opacity-30">·</span>
+      <span class="text-base font-bold tracking-tight">IFECOM</span>
+      <span class="opacity-30">·</span>
+      <span class="text-base font-bold tracking-tight">CONDUSEF</span>
+      <span class="opacity-30">·</span>
+      <span class="text-base font-bold tracking-tight">PROFECO</span>
+      <span class="opacity-30">·</span>
+      <span class="text-base font-bold tracking-tight">Buró de Crédito</span>
     </div>
   </div>
 </section>
 
-<!-- USE CASES -->
-<section id="casos" class="uses-bg">
-  <div class="container">
-    <div class="section-head-center">
-      <div class="section-tag">Casos de uso</div>
-      <h2 class="section-title">Si haces negocio con extraños, esto es para ti.</h2>
-    </div>
-    <div class="uses">
-      <div class="use-card">
-        <div class="emoji">📦</div>
-        <div>
-          <h4>Traders e importadores</h4>
-          <p>Antes de soltar anticipo a un proveedor nuevo, verifica que no esté en la Lista 69-B del SAT ni tenga demandas activas. Un reporte = una mala compra evitada.</p>
-        </div>
+<!-- ================= PROBLEM ================= -->
+<section class="py-24 lg:py-32 border-b border-ink-100" id="producto">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8">
+    <div class="grid lg:grid-cols-12 gap-12 items-start">
+      <div class="lg:col-span-5" data-reveal>
+        <div class="text-xs uppercase tracking-widest font-semibold text-brand-600 mb-4">El problema</div>
+        <h2 class="text-balance text-3xl lg:text-[40px] leading-[1.1] font-extrabold tracking-tight">En México, los negocios se hacen sin información confiable.</h2>
+        <p class="mt-5 text-lg text-ink-600 leading-relaxed text-pretty">
+          Cada día se cierran tratos con proveedores fantasma, brokers truchos y contrapartes en lista negra. La verificación se hace "de palabra" o con un Google Search. El resultado: fraude, impago, créditos colgados, sanciones fiscales.
+        </p>
       </div>
-      <div class="use-card">
-        <div class="emoji">🏠</div>
-        <div>
-          <h4>Caseros e inmobiliarias</h4>
-          <p>Verifica al inquilino antes de firmar contrato. Identidad real + capacidad de pago + historial de quejas. Ahorra meses de jurídico.</p>
+
+      <div class="lg:col-span-7 grid sm:grid-cols-2 gap-4" data-reveal style="transition-delay:.1s;">
+        <div class="rounded-xl border border-ink-200 bg-white p-6 lift">
+          <div class="w-10 h-10 rounded-lg bg-danger-50 text-danger-600 flex items-center justify-center mb-4">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+          </div>
+          <div class="font-semibold mb-1">Proveedores fantasma</div>
+          <div class="text-sm text-ink-600">RFCs en lista 69-B del SAT que emiten facturas falsas y comprometen tus deducciones fiscales.</div>
         </div>
-      </div>
-      <div class="use-card">
-        <div class="emoji">💼</div>
-        <div>
-          <h4>Fintechs y SOFOMs</h4>
-          <p>Onboarding KYC + score crediticio integrado en una sola API. Reduce fraude, acelera aprobaciones, cumple con CNBV.</p>
+        <div class="rounded-xl border border-ink-200 bg-white p-6 lift">
+          <div class="w-10 h-10 rounded-lg bg-warn-50 text-warn-600 flex items-center justify-center mb-4">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l2 2"/></svg>
+          </div>
+          <div class="font-semibold mb-1">Impagos y default</div>
+          <div class="text-sm text-ink-600">Contrapartes con concurso mercantil activo o historial de demandas que terminan no pagándote.</div>
         </div>
-      </div>
-      <div class="use-card">
-        <div class="emoji">🤝</div>
-        <div>
-          <h4>RH y socios estratégicos</h4>
-          <p>Contratación de roles sensibles, due diligence ligera para alianzas, validación de candidatos high-ticket. Evita meter al lobo al gallinero.</p>
+        <div class="rounded-xl border border-ink-200 bg-white p-6 lift">
+          <div class="w-10 h-10 rounded-lg bg-danger-50 text-danger-600 flex items-center justify-center mb-4">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4M12 16h.01"/></svg>
+          </div>
+          <div class="font-semibold mb-1">Sanciones internacionales</div>
+          <div class="text-sm text-ink-600">Personas en OFAC SDN, ONU o listas PEP. Operar con ellas expone a multas globales y bloqueo bancario.</div>
+        </div>
+        <div class="rounded-xl border border-ink-200 bg-white p-6 lift">
+          <div class="w-10 h-10 rounded-lg bg-ink-100 text-ink-700 flex items-center justify-center mb-4">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-5-5"/></svg>
+          </div>
+          <div class="font-semibold mb-1">Información dispersa</div>
+          <div class="text-sm text-ink-600">Cada fuente vive en un portal diferente. Verificar a un wey toma horas, y aun así te falta data.</div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- HOW IT WORKS -->
-<section id="como">
-  <div class="container">
-    <div class="section-head-center">
-      <div class="section-tag">Cómo funciona</div>
-      <h2 class="section-title">Tres pasos. Ningún PDF firmado al fax.</h2>
-    </div>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <h4>Capturas el dato</h4>
-        <p>RFC, CURP, INE o nombre completo de la persona o empresa. Vía dashboard, API o subida masiva en CSV.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <h4>Cruzamos fuentes</h4>
-        <p>En paralelo consultamos SAT, INE/Renapo, listas globales (OFAC/PEP), demandas y, si aplica, buró de crédito.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <h4>Decides con evidencia</h4>
-        <p>Recibes un score 0–1000, semáforo verde/amarillo/rojo, y reporte detallado descargable como PDF firmado.</p>
-      </div>
-    </div>
-  </div>
-</section>
+<!-- ================= SOLUTION ================= -->
+<section class="py-24 lg:py-28 bg-ink-950 text-white relative overflow-hidden">
+  <div class="absolute inset-0 grid-dots opacity-[0.04]"></div>
+  <div class="orb w-[400px] h-[400px] -top-20 left-1/3 bg-brand-500/30"></div>
+  <div class="orb w-[300px] h-[300px] bottom-0 right-10 bg-accent-500/20"></div>
 
-<!-- PRICING -->
-<section id="precios" class="pricing-bg">
-  <div class="container">
-    <div class="section-head-center">
-      <div class="section-tag">Precios</div>
-      <h2 class="section-title">Paga por consulta o ahorra con suscripción.</h2>
-      <p class="section-sub">Empieza gratis. Sin tarjeta, sin contrato anual, sin letras chiquitas.</p>
-    </div>
-
-    <div class="tiers">
-      <div class="tier">
-        <h3>Express</h3>
-        <div class="price">$49 <small>MXN</small></div>
-        <div class="price-sub">por consulta</div>
-        <ul>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Validación de RFC y CURP</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Lista 69-B del SAT</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Sanciones DOF</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Boletín Concursal</li>
-        </ul>
-        <a href="dashboard.html" class="btn btn-ghost">Empezar</a>
-      </div>
-
-      <div class="tier featured">
-        <h3>Estándar</h3>
-        <div class="price">$149 <small>MXN</small></div>
-        <div class="price-sub">por consulta</div>
-        <ul>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Todo lo de Express</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Validación INE Renapo</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Listas OFAC y PEP</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Quejas CONDUSEF y PROFECO</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Score TrustScore agregado</li>
-        </ul>
-        <a href="dashboard.html" class="btn btn-primary">Más vendido</a>
-      </div>
-
-      <div class="tier">
-        <h3>Profesional</h3>
-        <div class="price">$399 <small>MXN</small></div>
-        <div class="price-sub">por consulta</div>
-        <ul>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Todo lo de Estándar</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Red societaria de accionistas</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Litigios judiciales activos</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Recomendación con razones</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Reporte PDF de marca</li>
-        </ul>
-        <a href="dashboard.html" class="btn btn-ghost">Empezar</a>
-      </div>
-
-      <div class="tier coming">
-        <h3>Enterprise</h3>
-        <div class="price">$799 <small>MXN</small></div>
-        <div class="price-sub">por consulta</div>
-        <ul>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Todo lo de Profesional</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Buró de Crédito completo</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Open banking (Belvo)</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Volumen y SLA dedicado</li>
-        </ul>
-        <a href="#" class="btn btn-ghost" onclick="event.preventDefault();alert('Próximamente. Déjanos tu correo en el formulario y te avisamos cuando active.')">Próximamente</a>
-      </div>
-    </div>
-
-    <p style="text-align:center;margin-top:32px;color:var(--gray-500);font-size:14px;">
-      ¿Volumen alto? Suscripciones desde <strong style="color:var(--navy);">$499 MXN/mes</strong>. <a href="#" style="color:var(--blue);text-decoration:none;font-weight:600;">Ver planes →</a>
+  <div class="relative max-w-5xl mx-auto px-6 lg:px-8 text-center" data-reveal>
+    <div class="text-xs uppercase tracking-widest font-semibold text-brand-100 mb-6">La solución</div>
+    <h2 class="text-balance text-4xl lg:text-6xl font-extrabold tracking-tight leading-[1.05]">
+      TrustScore MX convierte<br />
+      <span class="bg-gradient-to-r from-white to-accent-400 bg-clip-text text-transparent">incertidumbre en claridad.</span>
+    </h2>
+    <p class="mt-7 text-lg lg:text-xl text-ink-300 max-w-3xl mx-auto leading-relaxed text-pretty">
+      Una sola consulta cruza 8 fuentes oficiales y devuelve un score auditable en menos de 3 segundos. Decides con evidencia, no con corazonadas.
     </p>
   </div>
 </section>
 
-<!-- FAQ -->
-<section id="faq">
-  <div class="container" style="max-width: 820px;">
-    <div class="section-head-center">
-      <div class="section-tag">Preguntas frecuentes</div>
-      <h2 class="section-title">Lo que probablemente te estás preguntando.</h2>
+<!-- ================= HOW IT WORKS ================= -->
+<section class="py-24 lg:py-32 border-b border-ink-100" id="como">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8">
+    <div class="max-w-2xl mx-auto text-center mb-16" data-reveal>
+      <div class="text-xs uppercase tracking-widest font-semibold text-brand-600 mb-4">Cómo funciona</div>
+      <h2 class="text-balance text-3xl lg:text-[40px] leading-tight font-extrabold tracking-tight">Cuatro pasos. Cero papeleo.</h2>
     </div>
 
-    <details>
-      <summary>¿Esto es legal? ¿Puedo consultar a alguien sin que sepa?</summary>
-      <p>Sí, es legal cuando la consulta tiene base legítima de negocio (contratación, crédito, alianza). Para consultas que tocan datos sensibles como Buró, debes recabar consentimiento ARCO firmado por el evaluado. TrustScore te entrega plantillas de aviso de privacidad y consentimiento listas para usar.</p>
-    </details>
+    <div class="relative">
+      <div class="absolute left-1/2 top-12 bottom-12 w-px bg-gradient-to-b from-transparent via-ink-200 to-transparent hidden lg:block"></div>
 
-    <details>
-      <summary>¿Necesito ser empresa o puedo usarlo como persona física?</summary>
-      <p>Ambos. Puedes pagar como persona física con tarjeta o como empresa con factura (CFDI 4.0 emitida por nosotros). Algunos tiers requieren validación de cuenta para evitar uso indebido.</p>
-    </details>
+      <div class="grid lg:grid-cols-4 gap-6">
 
-    <details>
-      <summary>¿Qué tan exacto es el score?</summary>
-      <p>El score 0–1000 combina señales de 8 fuentes oficiales con pesos calibrados según severidad (estar en 69-B pesa más que tener una queja menor en CONDUSEF). Reporte siempre incluye el detalle de qué señales lo movieron, así puedes auditar y discutir.</p>
-    </details>
+        <div class="relative rounded-2xl border border-ink-200 bg-white p-7 lift" data-reveal>
+          <div class="flex items-start justify-between mb-6">
+            <div class="w-10 h-10 rounded-xl bg-ink-900 text-white font-bold flex items-center justify-center text-sm">1</div>
+            <svg class="w-5 h-5 text-ink-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-5-5"/></svg>
+          </div>
+          <h3 class="font-semibold text-lg mb-1.5">Captura el dato</h3>
+          <p class="text-sm text-ink-600 leading-relaxed">RFC, CURP, INE o nombre. Por dashboard, API o subida masiva en CSV.</p>
+        </div>
 
-    <details>
-      <summary>¿Tienen API o solo dashboard?</summary>
-      <p>Ambos. El dashboard es para consultas ad-hoc. La API REST es para integración con tus sistemas, marketplaces o flujos de aprobación. Documentación tipo Stripe, SDKs en Python y JavaScript próximamente.</p>
-    </details>
+        <div class="relative rounded-2xl border border-ink-200 bg-white p-7 lift" data-reveal style="transition-delay:.05s;">
+          <div class="flex items-start justify-between mb-6">
+            <div class="w-10 h-10 rounded-xl bg-ink-900 text-white font-bold flex items-center justify-center text-sm">2</div>
+            <svg class="w-5 h-5 text-ink-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9"/><path d="M21 12a9 9 0 0 1-9 9"/></svg>
+          </div>
+          <h3 class="font-semibold text-lg mb-1.5">Cruzamos fuentes</h3>
+          <p class="text-sm text-ink-600 leading-relaxed">SAT, INE/Renapo, OFAC, DOF, IFECOM, CONDUSEF, litigios y, opcional, Buró.</p>
+        </div>
 
-    <details>
-      <summary>¿Qué pasa si el reporte falla o falta data?</summary>
-      <p>Si una fuente devuelve error o no tiene info de la persona, el reporte lo indica explícitamente y no te cobramos esa fuente. Cero "data inventada" o relleno con probabilidades.</p>
-    </details>
+        <div class="relative rounded-2xl border border-ink-200 bg-white p-7 lift" data-reveal style="transition-delay:.1s;">
+          <div class="flex items-start justify-between mb-6">
+            <div class="w-10 h-10 rounded-xl bg-ink-900 text-white font-bold flex items-center justify-center text-sm">3</div>
+            <svg class="w-5 h-5 text-ink-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
+          </div>
+          <h3 class="font-semibold text-lg mb-1.5">Generamos score</h3>
+          <p class="text-sm text-ink-600 leading-relaxed">Algoritmo auditable 0–100 con pesos calibrados. Cada bandera es trazable.</p>
+        </div>
 
-    <details>
-      <summary>¿Cómo se compara con Truora, MetaMap, Mati?</summary>
-      <p>Esos están enfocados en KYC para fintechs (validar que un usuario nuevo es quien dice ser). TrustScore está enfocado en evaluación reputacional B2B: ¿le hago negocio a este wey? Diferente caso de uso, diferente data, diferente score.</p>
-    </details>
+        <div class="relative rounded-2xl border border-brand-700 bg-brand-700 text-white p-7 lift" data-reveal style="transition-delay:.15s;">
+          <div class="flex items-start justify-between mb-6">
+            <div class="w-10 h-10 rounded-xl bg-white text-brand-700 font-bold flex items-center justify-center text-sm">4</div>
+            <svg class="w-5 h-5 text-brand-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <h3 class="font-semibold text-lg mb-1.5">Decides con evidencia</h3>
+          <p class="text-sm text-brand-100 leading-relaxed">Recibes score, semáforo, banderas detalladas y reporte PDF firmado.</p>
+        </div>
+
+      </div>
+    </div>
   </div>
 </section>
 
-<!-- CTA -->
-<section style="padding: 0 0 96px;">
-  <div class="container">
-    <div class="cta-section">
-      <h2>Tu próximo cliente puede estar en la Lista 69-B.</h2>
-      <p>Empieza gratis. 5 consultas Express incluidas, sin tarjeta de crédito.</p>
-      <a href="dashboard.html" class="btn btn-primary btn-lg">Crear cuenta gratis →</a>
+<!-- ================= INTERACTIVE DEMO ================= -->
+<section class="py-24 lg:py-32 bg-ink-50/50 border-b border-ink-100" id="demo">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8">
+    <div class="max-w-2xl mx-auto text-center mb-12" data-reveal>
+      <div class="text-xs uppercase tracking-widest font-semibold text-brand-600 mb-4">Pruébalo ahora</div>
+      <h2 class="text-balance text-3xl lg:text-[40px] leading-tight font-extrabold tracking-tight">¿A quién le vas a hacer negocio?</h2>
+      <p class="mt-4 text-lg text-ink-600 text-pretty">Captura un RFC y obtén el score en segundos. Sin registro.</p>
+    </div>
+
+    <div class="max-w-4xl mx-auto" data-reveal>
+      <div class="rounded-2xl border border-ink-200 bg-white shadow-xl shadow-ink-900/5 overflow-hidden">
+
+        <form id="demoForm" class="p-2 flex items-center gap-2 border-b border-ink-100">
+          <div class="flex-1 flex items-center gap-3 px-4">
+            <svg class="w-5 h-5 text-ink-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-5-5"/></svg>
+            <input id="demoInput" type="text" autocomplete="off" placeholder="RFC, CURP o razón social — ej. EJE850101A11" class="flex-1 py-3 bg-transparent outline-none text-base placeholder:text-ink-400" />
+          </div>
+          <button type="submit" class="bg-ink-900 hover:bg-ink-950 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition flex items-center gap-2">
+            <span id="demoBtnLabel">Evaluar</span>
+            <svg id="demoSpinner" class="w-4 h-4 animate-spin hidden" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" stroke-opacity=".3"/><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+          </button>
+        </form>
+
+        <div class="px-6 py-3 border-b border-ink-100 flex items-center gap-2 flex-wrap text-xs">
+          <span class="text-ink-500 mr-1">Prueba con:</span>
+          <button data-demo-rfc="EJE850101A11"  data-demo-name="Comercializadora Ejemplo Trucha" class="px-2.5 py-1 rounded-md bg-danger-50 text-danger-700 font-mono font-semibold hover:bg-danger-100 transition">EJE850101A11 · 69-B</button>
+          <button data-demo-rfc="PUT800101P77"  data-demo-name="PUTIN Vladimir"                 class="px-2.5 py-1 rounded-md bg-danger-50 text-danger-700 font-mono font-semibold hover:bg-danger-100 transition">OFAC match</button>
+          <button data-demo-rfc="XAXX010101000" data-demo-name="Tortillería El Sol SA de CV"     class="px-2.5 py-1 rounded-md bg-accent-500/10 text-accent-600 font-mono font-semibold hover:bg-accent-500/20 transition">XAXX010101000 · limpio</button>
+        </div>
+
+        <div id="demoResult" class="p-6 lg:p-8">
+          <!-- placeholder -->
+          <div id="demoEmpty" class="text-center py-12">
+            <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-ink-100 text-ink-400 mb-4">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 L4 6 V11 C4 16 7 20 12 22 C17 20 20 16 20 11 V6 Z"/></svg>
+            </div>
+            <div class="font-semibold mb-1">Tu reporte aparecerá aquí</div>
+            <div class="text-sm text-ink-500">Captura un RFC arriba o usa uno de los ejemplos.</div>
+          </div>
+        </div>
+
+      </div>
+
+      <p class="mt-4 text-center text-xs text-ink-400">Demo con datos de muestra. Las consultas reales requieren cuenta y consumen del saldo gratis.</p>
     </div>
   </div>
 </section>
 
-<!-- FOOTER -->
-<footer>
-  <div class="container">
-    <div class="footer-grid">
-      <div>
-        <a href="#" class="logo" style="color:white;">
-          <span class="logo-mark">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L4 6 V11 C4 16 7 20 12 22 C17 20 20 16 20 11 V6 Z"/><path d="M9 12 L11 14 L15 10"/></svg>
+<!-- ================= USE CASES ================= -->
+<section class="py-24 lg:py-32 border-b border-ink-100" id="casos">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8">
+    <div class="max-w-2xl mb-14" data-reveal>
+      <div class="text-xs uppercase tracking-widest font-semibold text-brand-600 mb-4">Casos de uso</div>
+      <h2 class="text-balance text-3xl lg:text-[40px] leading-tight font-extrabold tracking-tight">Antes de mover dinero, vale 49 pesos saber con quién.</h2>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+      <div class="rounded-2xl border border-ink-200 bg-white p-7 lift" data-reveal>
+        <div class="text-2xl mb-4">💸</div>
+        <h3 class="font-semibold text-lg mb-1.5">Antes de prestar dinero</h3>
+        <p class="text-sm text-ink-600 leading-relaxed">Verifica al solicitante: lista 69-B, score Buró, demandas activas. Decide aprobar o no en minutos.</p>
+      </div>
+
+      <div class="rounded-2xl border border-ink-200 bg-white p-7 lift" data-reveal style="transition-delay:.05s;">
+        <div class="text-2xl mb-4">🤝</div>
+        <h3 class="font-semibold text-lg mb-1.5">Antes de asociarte</h3>
+        <p class="text-sm text-ink-600 leading-relaxed">Due diligence ligera del partner: red societaria, sanciones internacionales, litigios.</p>
+      </div>
+
+      <div class="rounded-2xl border border-ink-200 bg-white p-7 lift" data-reveal style="transition-delay:.1s;">
+        <div class="text-2xl mb-4">👥</div>
+        <h3 class="font-semibold text-lg mb-1.5">Antes de contratar</h3>
+        <p class="text-sm text-ink-600 leading-relaxed">Validación de identidad real, INE/Renapo, OFAC. Especial para roles sensibles.</p>
+      </div>
+
+      <div class="rounded-2xl border border-ink-200 bg-white p-7 lift" data-reveal>
+        <div class="text-2xl mb-4">📦</div>
+        <h3 class="font-semibold text-lg mb-1.5">Antes de vender a crédito</h3>
+        <p class="text-sm text-ink-600 leading-relaxed">Cliente nuevo en marketplace o B2B. Detecta proveedores fantasma antes del anticipo.</p>
+      </div>
+
+      <div class="rounded-2xl border border-ink-200 bg-white p-7 lift" data-reveal style="transition-delay:.05s;">
+        <div class="text-2xl mb-4">📈</div>
+        <h3 class="font-semibold text-lg mb-1.5">Antes de invertir</h3>
+        <p class="text-sm text-ink-600 leading-relaxed">Verificación de fundadores, accionistas y controlling persons. Evita fondear gente con sanciones.</p>
+      </div>
+
+      <div class="rounded-2xl border border-ink-200 bg-white p-7 lift" data-reveal style="transition-delay:.1s;">
+        <div class="text-2xl mb-4">⚡</div>
+        <h3 class="font-semibold text-lg mb-1.5">Antes de hacer trading</h3>
+        <p class="text-sm text-ink-600 leading-relaxed">Counter-party check rápido para movimientos OTC, P2P, brokers locales.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================= B2B INTEGRATION ================= -->
+<section class="py-24 lg:py-32 bg-gradient-to-b from-white to-ink-50/60 border-b border-ink-100">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8">
+    <div class="grid lg:grid-cols-12 gap-12 items-center">
+
+      <div class="lg:col-span-5" data-reveal>
+        <div class="text-xs uppercase tracking-widest font-semibold text-brand-600 mb-4">B2B · API</div>
+        <h2 class="text-balance text-3xl lg:text-[40px] leading-tight font-extrabold tracking-tight">Integra TrustScore MX en tus procesos.</h2>
+        <p class="mt-5 text-lg text-ink-600 leading-relaxed text-pretty">REST API documentada al estilo Stripe. Webhooks de monitoreo. SDK en Python y JS. Cobranza por tier o plan recurrente.</p>
+        <div class="mt-7 flex flex-wrap gap-3">
+          <a href="https://api.trustscoremx.com/docs" target="_blank" rel="noopener" class="inline-flex items-center gap-2 bg-ink-900 hover:bg-ink-950 text-white font-semibold px-5 py-3 rounded-lg transition">
+            Ver documentación
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 17L17 7M17 7H8M17 7V16"/></svg>
+          </a>
+          <a href="mailto:ventas@trustscoremx.com" class="inline-flex items-center gap-2 border border-ink-200 hover:border-ink-300 hover:bg-white font-medium px-5 py-3 rounded-lg transition">
+            Hablar con ventas
+          </a>
+        </div>
+      </div>
+
+      <div class="lg:col-span-7" data-reveal style="transition-delay:.1s;">
+        <div class="rounded-2xl bg-ink-950 text-ink-100 shadow-2xl shadow-ink-900/30 overflow-hidden border border-ink-800">
+          <div class="flex items-center justify-between px-5 py-3 bg-ink-900 border-b border-ink-800 text-xs font-mono text-ink-400">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-danger-500/70"></span><span class="w-2.5 h-2.5 rounded-full bg-warn-500/70"></span><span class="w-2.5 h-2.5 rounded-full bg-accent-500/70"></span></span>
+            <span>POST · api.trustscoremx.com/api/v1/check/express</span>
+            <button onclick="navigator.clipboard.writeText(document.getElementById('codeSnippet').innerText)" class="hover:text-white transition">copiar</button>
+          </div>
+          <pre id="codeSnippet" class="p-6 text-[13px] leading-relaxed font-mono overflow-x-auto"><span class="text-ink-500">$</span> curl -X POST https://api.trustscoremx.com/api/v1/check/express \
+  -H <span class="text-accent-400">"X-API-Key: tsmx_•••"</span> \
+  -H <span class="text-accent-400">"Content-Type: application/json"</span> \
+  -d <span class="text-warn-500">'{"rfc":"EJE850101A11","nombre":"Comercializadora Ejemplo"}'</span>
+
+<span class="text-ink-500">→</span> <span class="text-brand-500">{</span>
+  <span class="text-ink-300">"score"</span>: <span class="text-warn-500">200</span>,
+  <span class="text-ink-300">"categoria"</span>: <span class="text-danger-500">"CRITICO"</span>,
+  <span class="text-ink-300">"recomendacion"</span>: <span class="text-warn-500">"NO PROCEDER. RFC en lista 69-B SAT"</span>,
+  <span class="text-ink-300">"banderas"</span>: [
+    { <span class="text-ink-300">"severidad"</span>: <span class="text-danger-500">"critica"</span>,
+      <span class="text-ink-300">"mensaje"</span>: <span class="text-warn-500">"RFC con situación DEFINITIVO"</span> }
+  ]
+<span class="text-brand-500">}</span></pre>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================= PRICING ================= -->
+<section class="py-24 lg:py-32 border-b border-ink-100" id="precios">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8">
+    <div class="max-w-2xl mx-auto text-center mb-14" data-reveal>
+      <div class="text-xs uppercase tracking-widest font-semibold text-brand-600 mb-4">Precios</div>
+      <h2 class="text-balance text-3xl lg:text-[40px] leading-tight font-extrabold tracking-tight">Empieza gratis. Escala cuando lo necesites.</h2>
+      <p class="mt-4 text-lg text-ink-600">Sin contratos anuales. Sin letras chiquitas.</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto">
+
+      <div class="rounded-2xl border border-ink-200 bg-white p-8 flex flex-col lift" data-reveal>
+        <div class="text-xs uppercase tracking-wider text-ink-500 font-semibold mb-2">Free</div>
+        <div class="flex items-baseline gap-1 mb-1"><span class="text-4xl font-extrabold tracking-tight">$0</span><span class="text-ink-500 text-sm">/mes</span></div>
+        <div class="text-sm text-ink-500 mb-7">Para probar y casos esporádicos</div>
+        <ul class="space-y-2.5 text-sm text-ink-700 mb-8 flex-1">
+          <li class="flex gap-2"><svg class="w-4 h-4 text-accent-600 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>5 consultas Express</li>
+          <li class="flex gap-2"><svg class="w-4 h-4 text-accent-600 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>SAT 69-B + DOF + Boletín</li>
+          <li class="flex gap-2"><svg class="w-4 h-4 text-accent-600 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>Reporte web</li>
+        </ul>
+        <a href="dashboard.html" class="inline-flex items-center justify-center font-semibold border border-ink-200 hover:bg-ink-50 px-4 py-2.5 rounded-lg transition">Crear cuenta</a>
+      </div>
+
+      <div class="relative rounded-2xl bg-ink-950 text-white p-8 flex flex-col lift shadow-2xl shadow-ink-900/20" data-reveal style="transition-delay:.05s;">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent-500 text-ink-950 text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full">Más popular</div>
+        <div class="text-xs uppercase tracking-wider text-ink-300 font-semibold mb-2">Pro</div>
+        <div class="flex items-baseline gap-1 mb-1"><span class="text-4xl font-extrabold tracking-tight">$1,999</span><span class="text-ink-400 text-sm">/mes</span></div>
+        <div class="text-sm text-ink-400 mb-7">Para operadores B2B activos</div>
+        <ul class="space-y-2.5 text-sm text-ink-200 mb-8 flex-1">
+          <li class="flex gap-2"><svg class="w-4 h-4 text-accent-400 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>30 Express + 20 Estándar/mes</li>
+          <li class="flex gap-2"><svg class="w-4 h-4 text-accent-400 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>OFAC SDN + INE Renapo</li>
+          <li class="flex gap-2"><svg class="w-4 h-4 text-accent-400 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>Reporte PDF de marca</li>
+          <li class="flex gap-2"><svg class="w-4 h-4 text-accent-400 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>Acceso a API + webhooks</li>
+          <li class="flex gap-2"><svg class="w-4 h-4 text-accent-400 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>Bulk CSV upload</li>
+        </ul>
+        <a href="dashboard.html?plan=growth" class="inline-flex items-center justify-center font-semibold bg-white text-ink-900 hover:bg-ink-100 px-4 py-2.5 rounded-lg transition">Empezar Pro</a>
+      </div>
+
+      <div class="rounded-2xl border border-ink-200 bg-white p-8 flex flex-col lift" data-reveal style="transition-delay:.1s;">
+        <div class="text-xs uppercase tracking-wider text-ink-500 font-semibold mb-2">Business</div>
+        <div class="flex items-baseline gap-1 mb-1"><span class="text-4xl font-extrabold tracking-tight">$4,999</span><span class="text-ink-500 text-sm">/mes</span></div>
+        <div class="text-sm text-ink-500 mb-7">Para fintechs y volumen alto</div>
+        <ul class="space-y-2.5 text-sm text-ink-700 mb-8 flex-1">
+          <li class="flex gap-2"><svg class="w-4 h-4 text-accent-600 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>100 Express + 50 Estándar + 20 Profesional</li>
+          <li class="flex gap-2"><svg class="w-4 h-4 text-accent-600 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>Análisis societario + litigios</li>
+          <li class="flex gap-2"><svg class="w-4 h-4 text-accent-600 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>Buró de Crédito (vía partner)</li>
+          <li class="flex gap-2"><svg class="w-4 h-4 text-accent-600 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>SLA dedicado, soporte priority</li>
+          <li class="flex gap-2"><svg class="w-4 h-4 text-accent-600 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>White label de PDFs</li>
+        </ul>
+        <a href="mailto:ventas@trustscoremx.com" class="inline-flex items-center justify-center font-semibold border border-ink-200 hover:bg-ink-50 px-4 py-2.5 rounded-lg transition">Contactar ventas</a>
+      </div>
+
+    </div>
+
+    <p class="mt-10 text-center text-sm text-ink-500">¿Solo quieres una consulta? <a href="dashboard.html" class="text-brand-700 font-semibold hover:underline">Compra desde $49 MXN sin suscripción →</a></p>
+  </div>
+</section>
+
+<!-- ================= FAQ ================= -->
+<section class="py-24 lg:py-32 border-b border-ink-100">
+  <div class="max-w-3xl mx-auto px-6 lg:px-8">
+    <div class="text-center mb-12" data-reveal>
+      <div class="text-xs uppercase tracking-widest font-semibold text-brand-600 mb-4">Preguntas frecuentes</div>
+      <h2 class="text-balance text-3xl lg:text-[40px] leading-tight font-extrabold tracking-tight">Lo que probablemente te estás preguntando.</h2>
+    </div>
+
+    <div class="divide-y divide-ink-200 border-y border-ink-200" data-reveal>
+      <details class="group py-6">
+        <summary class="flex items-center justify-between cursor-pointer">
+          <span class="font-semibold text-lg">¿Esto es legal? ¿Puedo consultar a alguien sin que sepa?</span>
+          <svg class="accordion-chevron w-5 h-5 text-ink-500 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <p class="mt-3 text-ink-600 text-pretty leading-relaxed">Sí, cuando la consulta tiene base legítima de negocio (contratación, crédito, alianza). Para datos sensibles como Buró, debes recabar consentimiento ARCO firmado. Te entregamos plantillas listas.</p>
+      </details>
+      <details class="group py-6">
+        <summary class="flex items-center justify-between cursor-pointer">
+          <span class="font-semibold text-lg">¿Qué tan exacto es el score?</span>
+          <svg class="accordion-chevron w-5 h-5 text-ink-500 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <p class="mt-3 text-ink-600 text-pretty leading-relaxed">El score combina señales de 8 fuentes oficiales con pesos calibrados por severidad. Cada reporte muestra qué señales lo movieron, así puedes auditar y discutir.</p>
+      </details>
+      <details class="group py-6">
+        <summary class="flex items-center justify-between cursor-pointer">
+          <span class="font-semibold text-lg">¿Tienen API o solo dashboard?</span>
+          <svg class="accordion-chevron w-5 h-5 text-ink-500 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <p class="mt-3 text-ink-600 text-pretty leading-relaxed">Ambos. REST API documentada en <code class="font-mono text-sm bg-ink-100 px-1.5 py-0.5 rounded">api.trustscoremx.com/docs</code>, webhooks para monitoreo continuo y SDKs en camino.</p>
+      </details>
+      <details class="group py-6">
+        <summary class="flex items-center justify-between cursor-pointer">
+          <span class="font-semibold text-lg">¿Cómo manejan datos personales?</span>
+          <svg class="accordion-chevron w-5 h-5 text-ink-500 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <p class="mt-3 text-ink-600 text-pretty leading-relaxed">Cifrado TLS en tránsito, AES-256 en reposo, hash bcrypt para passwords. Cumplimiento LFPDPPP completo. Aviso de privacidad en <a class="text-brand-700 underline" href="/legal/privacidad.html">/legal/privacidad.html</a>.</p>
+      </details>
+      <details class="group py-6">
+        <summary class="flex items-center justify-between cursor-pointer">
+          <span class="font-semibold text-lg">¿Qué pasa si una fuente falla?</span>
+          <svg class="accordion-chevron w-5 h-5 text-ink-500 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <p class="mt-3 text-ink-600 text-pretty leading-relaxed">El reporte indica explícitamente las fuentes que respondieron y las que no. Cero relleno con probabilidades inventadas.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CTA + LEGAL DISCLAIMER ================= -->
+<section class="py-24 lg:py-32 bg-ink-950 text-white relative overflow-hidden">
+  <div class="orb w-[500px] h-[500px] -top-32 right-0 bg-brand-500/30"></div>
+  <div class="orb w-[400px] h-[400px] -bottom-20 -left-20 bg-accent-500/20"></div>
+
+  <div class="relative max-w-4xl mx-auto px-6 lg:px-8 text-center" data-reveal>
+    <h2 class="text-balance text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.05]">
+      Tu próximo cliente puede estar en la lista 69-B.
+    </h2>
+    <p class="mt-5 text-lg text-ink-300 max-w-2xl mx-auto text-pretty">Empieza gratis con 5 consultas. Sin tarjeta. Sin contratos. En 60 segundos.</p>
+    <div class="mt-9 flex flex-wrap justify-center gap-3">
+      <a href="dashboard.html" class="bg-white text-ink-950 hover:bg-ink-100 font-semibold px-6 py-3.5 rounded-lg transition inline-flex items-center gap-2">
+        Crear cuenta gratis
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+      <a href="https://api.trustscoremx.com/docs" target="_blank" rel="noopener" class="border border-ink-700 hover:border-ink-500 hover:bg-ink-900 font-medium px-6 py-3.5 rounded-lg transition inline-flex items-center gap-2">
+        Ver API docs
+      </a>
+    </div>
+    <p class="mt-12 text-xs text-ink-500 max-w-2xl mx-auto">
+      Este score es informativo y no sustituye asesoría legal o financiera. La decisión final es responsabilidad exclusiva del usuario. Datos de fuentes oficiales públicas.
+    </p>
+  </div>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer class="bg-ink-950 text-ink-400 pt-16 pb-10 border-t border-ink-900">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8">
+    <div class="grid md:grid-cols-12 gap-10">
+      <div class="md:col-span-5">
+        <a href="#" class="flex items-center gap-2.5">
+          <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-brand-700 to-accent-600 shadow-md">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-white"><path d="M12 2 L4 6 V11 C4 16 7 20 12 22 C17 20 20 16 20 11 V6 Z"/><path d="M9 12 L11 14 L15 10"/></svg>
           </span>
-          TrustScore MX
+          <span class="text-white font-semibold tracking-tight">TrustScore <span class="text-brand-300">MX</span></span>
         </a>
-        <p style="font-size:14px;margin-top:14px;max-width:300px;line-height:1.6;">
-          Score de confianza para hacer negocios en México. Construido con fuentes oficiales y cumplimiento LFPDPPP.
-        </p>
+        <p class="mt-5 text-sm leading-relaxed max-w-sm">Risk intelligence B2B para hacer negocios con claridad en México. Construido con fuentes oficiales y cumplimiento LFPDPPP.</p>
+        <div class="mt-6 text-xs text-ink-500">© 2026 TrustScore MX · Hecho en México 🇲🇽</div>
       </div>
-      <div>
-        <h5>Producto</h5>
-        <ul>
-          <li><a href="#producto">Características</a></li>
-          <li><a href="#precios">Precios</a></li>
-          <li><a href="#">API Docs</a></li>
-          <li><a href="dashboard.html">Dashboard</a></li>
+
+      <div class="md:col-span-2">
+        <h5 class="text-white text-xs uppercase tracking-widest font-semibold mb-4">Producto</h5>
+        <ul class="space-y-2.5 text-sm">
+          <li><a href="#producto" class="hover:text-white transition">Características</a></li>
+          <li><a href="#precios"  class="hover:text-white transition">Precios</a></li>
+          <li><a href="https://api.trustscoremx.com/docs" target="_blank" rel="noopener" class="hover:text-white transition">API Docs</a></li>
+          <li><a href="dashboard.html" class="hover:text-white transition">Dashboard</a></li>
         </ul>
       </div>
-      <div>
-        <h5>Empresa</h5>
-        <ul>
-          <li><a href="#">Sobre nosotros</a></li>
-          <li><a href="#">Contacto</a></li>
-          <li><a href="#">Blog</a></li>
+
+      <div class="md:col-span-2">
+        <h5 class="text-white text-xs uppercase tracking-widest font-semibold mb-4">Empresa</h5>
+        <ul class="space-y-2.5 text-sm">
+          <li><a href="mailto:contacto@trustscoremx.com" class="hover:text-white transition">Contacto</a></li>
+          <li><a href="mailto:ventas@trustscoremx.com"   class="hover:text-white transition">Ventas B2B</a></li>
+          <li><a href="mailto:soporte@trustscoremx.com"  class="hover:text-white transition">Soporte</a></li>
         </ul>
       </div>
-      <div>
-        <h5>Legal</h5>
-        <ul>
-          <li><a href="/legal/privacidad.html">Aviso de privacidad</a></li>
-          <li><a href="/legal/terminos.html">Términos y condiciones</a></li>
-          <li><a href="/legal/privacidad.html">Cumplimiento LFPDPPP</a></li>
-          <li><a href="/legal/arco.html">Derechos ARCO</a></li>
+
+      <div class="md:col-span-3">
+        <h5 class="text-white text-xs uppercase tracking-widest font-semibold mb-4">Legal</h5>
+        <ul class="space-y-2.5 text-sm">
+          <li><a href="legal/privacidad.html" class="hover:text-white transition">Aviso de privacidad</a></li>
+          <li><a href="legal/terminos.html"   class="hover:text-white transition">Términos y condiciones</a></li>
+          <li><a href="legal/arco.html"       class="hover:text-white transition">Derechos ARCO</a></li>
+          <li><a href="legal/privacidad.html#10-autoridad-de-control" class="hover:text-white transition">Cumplimiento LFPDPPP</a></li>
         </ul>
       </div>
-    </div>
-    <div class="footer-bottom">
-      <span>© 2026 TrustScore MX. Hecho en México 🇲🇽</span>
-      <span>contacto@trustscore.mx</span>
     </div>
   </div>
 </footer>
+
+<!-- ================= JS: counter, reveal, demo ================= -->
+<script>
+  // Reveal on scroll
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('is-visible'); io.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('[data-reveal]').forEach(el => io.observe(el));
+
+  // Counter animation for the hero score
+  function countUp(el) {
+    const target = parseInt(el.dataset.target, 10);
+    const dur = 1400, start = performance.now();
+    function tick(now) {
+      const t = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.floor(eased * target);
+      if (t < 1) requestAnimationFrame(tick);
+      else el.textContent = target;
+    }
+    requestAnimationFrame(tick);
+  }
+  document.querySelectorAll('[data-counter]').forEach(el => {
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { countUp(e.target); obs.unobserve(e.target); } });
+    }, { threshold: 0.5 });
+    obs.observe(el);
+  });
+
+  // ============== INTERACTIVE DEMO ==============
+  const FIXTURES = {
+    'EJE850101A11': {
+      rfc: 'EJE850101A11',
+      nombre: 'Comercializadora Ejemplo Trucha SA de CV',
+      score: 12,
+      categoria: 'CRÍTICO',
+      color: 'red',
+      recomendacion: 'NO PROCEDER. RFC en lista negra del SAT con situación DEFINITIVO. Operar con esta entidad expone a sanciones legales y fiscales.',
+      checks: [
+        { label: 'SAT 69-B (lista negra de facturación)', value: 'Encontrado · DEFINITIVO', state: 'bad' },
+        { label: 'Identidad RFC',                          value: 'Estructura inválida',     state: 'warn' },
+        { label: 'OFAC SDN / sanciones',                   value: 'Sin coincidencias',       state: 'ok'  },
+        { label: 'Boletín Concursal IFECOM',               value: 'Sin proceso activo',      state: 'ok'  },
+        { label: 'Sanciones DOF',                          value: 'Sin publicaciones',       state: 'ok'  },
+      ],
+      banderas: [
+        { sev: 'crítica', tipo: 'Fiscal', mensaje: 'RFC en Lista 69-B SAT con situación DEFINITIVO (facturas falsas confirmadas)' },
+      ],
+    },
+    'PUT800101P77': {
+      rfc: 'PUT800101P77',
+      nombre: 'PUTIN Vladimir Vladimirovich',
+      score: 8,
+      categoria: 'CRÍTICO',
+      color: 'red',
+      recomendacion: 'NO PROCEDER. Coincidencia en OFAC SDN. Operar expone a sanciones internacionales y bloqueo bancario.',
+      checks: [
+        { label: 'SAT 69-B (lista negra de facturación)', value: 'No aparece',              state: 'ok' },
+        { label: 'OFAC SDN / sanciones',                   value: 'Match: PUTIN Vladimir',   state: 'bad' },
+        { label: 'PEP internacional',                       value: 'Coincidencia (Russia)',   state: 'bad' },
+        { label: 'Identidad RFC',                          value: 'Estructura no válida',    state: 'warn' },
+      ],
+      banderas: [
+        { sev: 'crítica', tipo: 'Compliance', mensaje: 'Coincidencia en OFAC SDN — Russia EO14024' },
+      ],
+    },
+    'XAXX010101000': {
+      rfc: 'XAXX010101000',
+      nombre: 'Tortillería El Sol SA de CV',
+      score: 92,
+      categoria: 'EXCELENTE',
+      color: 'green',
+      recomendacion: 'Procede con confianza. Perfil limpio en todas las fuentes evaluadas. Apto para crédito comercial y alianzas.',
+      checks: [
+        { label: 'SAT 69-B (lista negra de facturación)', value: 'No aparece',          state: 'ok' },
+        { label: 'Identidad RFC',                          value: 'Válido (genérico)',   state: 'ok' },
+        { label: 'OFAC SDN / sanciones',                   value: 'Sin coincidencias',   state: 'ok' },
+        { label: 'Boletín Concursal IFECOM',               value: 'Sin proceso activo',  state: 'ok' },
+        { label: 'Quejas CONDUSEF / PROFECO',              value: 'Ninguna registrada',  state: 'ok' },
+      ],
+      banderas: [],
+    },
+  };
+
+  const $form    = document.getElementById('demoForm');
+  const $input   = document.getElementById('demoInput');
+  const $btnLbl  = document.getElementById('demoBtnLabel');
+  const $spinner = document.getElementById('demoSpinner');
+  const $result  = document.getElementById('demoResult');
+  const $empty   = document.getElementById('demoEmpty');
+
+  function pickFixture(value) {
+    const v = (value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (FIXTURES[v]) return FIXTURES[v];
+    // fallback: any other RFC → return clean profile
+    if (v.length >= 12) {
+      return {
+        rfc: v,
+        nombre: 'Persona/Empresa demo',
+        score: 78,
+        categoria: 'CONFIABLE',
+        color: 'green',
+        recomendacion: 'Procede con confianza. Sin banderas relevantes en las fuentes consultadas.',
+        checks: [
+          { label: 'SAT 69-B (lista negra)', value: 'No aparece',        state: 'ok' },
+          { label: 'OFAC SDN / sanciones',    value: 'Sin coincidencias', state: 'ok' },
+          { label: 'Identidad RFC',           value: 'Estructura válida', state: 'ok' },
+        ],
+        banderas: [],
+      };
+    }
+    return null;
+  }
+
+  function render(data) {
+    const colors = {
+      green: { ring: '#10B981', dot: 'bg-accent-500',  text: 'text-accent-600',   chip: 'bg-accent-500/10 text-accent-600',     btn: 'text-accent-600' },
+      amber: { ring: '#F59E0B', dot: 'bg-warn-500',    text: 'text-warn-600',      chip: 'bg-warn-50 text-warn-600',              btn: 'text-warn-600' },
+      red:   { ring: '#DC2626', dot: 'bg-danger-500',  text: 'text-danger-600',    chip: 'bg-danger-50 text-danger-700',          btn: 'text-danger-700' },
+    };
+    const c = colors[data.color] || colors.green;
+    const dashOffset = 339 - (339 * data.score / 100);
+
+    const checksHtml = data.checks.map(ch => {
+      const dot = ch.state === 'ok' ? 'bg-accent-500' : ch.state === 'warn' ? 'bg-warn-500' : 'bg-danger-500';
+      const txt = ch.state === 'ok' ? 'text-accent-600' : ch.state === 'warn' ? 'text-warn-600' : 'text-danger-600';
+      return `
+        <div class="flex items-center justify-between py-3 text-sm">
+          <span class="flex items-center gap-2 text-ink-700"><span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${ch.label}</span>
+          <span class="font-semibold ${txt}">${ch.value}</span>
+        </div>`;
+    }).join('<div class="border-t border-ink-100"></div>');
+
+    const banderasHtml = data.banderas.length
+      ? `<div class="mt-6 pt-6 border-t border-ink-100">
+          <div class="text-xs uppercase tracking-widest font-semibold text-ink-500 mb-3">Banderas detectadas</div>
+          ${data.banderas.map(b => `
+            <div class="flex items-start gap-3 p-4 rounded-xl bg-danger-50 border border-danger-500/20 mb-2">
+              <svg class="w-5 h-5 text-danger-600 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+              <div>
+                <div class="text-xs uppercase tracking-wider font-bold text-danger-700">${b.sev} · ${b.tipo}</div>
+                <div class="text-sm text-ink-800 mt-0.5">${b.mensaje}</div>
+              </div>
+            </div>
+          `).join('')}
+         </div>`
+      : '';
+
+    return `
+      <div class="grid md:grid-cols-12 gap-8 items-start">
+        <div class="md:col-span-4 flex flex-col items-center justify-center">
+          <div class="relative w-44 h-44">
+            <svg viewBox="0 0 120 120" class="w-full h-full">
+              <circle cx="60" cy="60" r="54" stroke="#E2E8F0" stroke-width="10" fill="none"/>
+              <circle cx="60" cy="60" r="54" stroke="${c.ring}" stroke-width="10" fill="none" stroke-linecap="round"
+                      stroke-dasharray="339" stroke-dashoffset="${dashOffset}"
+                      style="transform:rotate(-90deg);transform-origin:center;transition:stroke-dashoffset 1.4s cubic-bezier(.16,1,.3,1)"/>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <div class="text-5xl font-extrabold tracking-tight text-ink-900">${data.score}</div>
+              <div class="text-[10px] uppercase tracking-wider font-semibold text-ink-400 mt-0.5">de 100</div>
+            </div>
+          </div>
+          <div class="mt-4 text-center">
+            <span class="inline-flex items-center gap-1.5 ${c.chip} text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">${data.categoria}</span>
+          </div>
+        </div>
+
+        <div class="md:col-span-8">
+          <div class="text-[11px] uppercase tracking-widest text-ink-400 font-semibold mb-1">EVALUADO</div>
+          <div class="font-semibold text-lg text-ink-900">${data.nombre}</div>
+          <div class="text-xs font-mono text-ink-500 mt-0.5 mb-5">RFC: ${data.rfc}</div>
+
+          <div class="rounded-xl bg-ink-50 border border-ink-200 p-4 mb-5">
+            <div class="text-xs uppercase tracking-wider font-semibold text-ink-500 mb-1">Recomendación</div>
+            <div class="text-base font-semibold ${c.text} mb-1">${data.categoria}</div>
+            <div class="text-sm text-ink-700 leading-relaxed">${data.recomendacion}</div>
+          </div>
+
+          <div class="rounded-xl border border-ink-200 bg-white px-4 divide-y divide-ink-100">
+            ${checksHtml}
+          </div>
+
+          ${banderasHtml}
+
+          <div class="mt-6 flex items-center justify-between text-xs text-ink-500">
+            <span>Demo · ${data.checks.length} fuentes consultadas</span>
+            <a href="dashboard.html" class="font-semibold text-brand-700 hover:underline inline-flex items-center gap-1">Ver reporte completo en dashboard <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg></a>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function runDemo(rfc, name) {
+    if (name) $input.value = `${rfc}  ·  ${name}`;
+    else      $input.value = rfc;
+    const data = pickFixture(rfc);
+    if (!data) {
+      $result.innerHTML = `<div class="text-center text-sm text-ink-500 py-8">RFC no válido. Usa un ejemplo de los chips arriba o un RFC real (12-13 caracteres).</div>`;
+      return;
+    }
+    $btnLbl.textContent = 'Evaluando…';
+    $spinner.classList.remove('hidden');
+    $result.innerHTML = `<div class="py-12 text-center text-ink-500"><div class="inline-block w-6 h-6 border-2 border-ink-300 border-t-ink-900 rounded-full animate-spin"></div><div class="mt-3 text-sm">Cruzando 8 fuentes oficiales…</div></div>`;
+    setTimeout(() => {
+      $btnLbl.textContent = 'Evaluar';
+      $spinner.classList.add('hidden');
+      $result.innerHTML = render(data);
+    }, 1100);
+  }
+
+  $form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = $input.value.trim().split(/\s+/)[0];
+    runDemo(v, '');
+  });
+  document.querySelectorAll('[data-demo-rfc]').forEach(btn => {
+    btn.addEventListener('click', () => runDemo(btn.dataset.demoRfc, btn.dataset.demoName));
+  });
+</script>
 
 </body>
 </html>

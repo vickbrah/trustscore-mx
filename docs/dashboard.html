@@ -1,389 +1,332 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="scroll-smooth">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
 <title>Dashboard · TrustScore MX</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      fontFamily: { sans:['Inter','system-ui','sans-serif'], mono:['JetBrains Mono','monospace'] },
+      colors: {
+        ink: { 50:'#F8FAFC',100:'#F1F5F9',200:'#E2E8F0',300:'#CBD5E1',400:'#94A3B8',500:'#64748B',600:'#475569',700:'#334155',800:'#1E293B',900:'#0F172A',950:'#020617' },
+        brand: { 50:'#EFF6FF',100:'#DBEAFE',500:'#3B82F6',600:'#2563EB',700:'#1D4ED8',800:'#1E40AF',900:'#1E3A8A' },
+        accent: { 400:'#34D399',500:'#10B981',600:'#059669' },
+        danger: { 50:'#FEF2F2',500:'#EF4444',600:'#DC2626',700:'#B91C1C' },
+        warn: { 50:'#FFFBEB',500:'#F59E0B',600:'#D97706' },
+      },
+    }},
+  };
+</script>
 <style>
-  :root {
-    --navy: #0A2540; --navy-2: #0E2E54;
-    --blue: #0070F3; --blue-bg: #EDF4FF;
-    --gray-50: #F6F9FC; --gray-100: #EEF1F6; --gray-200: #DCE2EC;
-    --gray-500: #6B7A90; --gray-700: #3C4B61;
-    --green: #00A36C; --green-bg: #E6F7F0;
-    --red: #E5484D; --red-bg: #FDECEC;
-    --amber: #F5A524; --amber-bg: #FEF6E6;
-    --orange: #FF7A00; --orange-bg: #FEEEDC;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; font-family: 'Inter', sans-serif; background: var(--gray-50); color: var(--navy); -webkit-font-smoothing: antialiased; }
-
-  /* Sidebar layout */
-  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
-  aside {
-    background: var(--navy); color: white; padding: 24px 16px;
-    display: flex; flex-direction: column; gap: 6px;
-  }
-  .brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 22px; font-weight: 800; font-size: 17px; }
-  .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg,#0070F3,#0A2540); display: grid; place-items: center; }
-  .brand-mark svg { width: 16px; height: 16px; color: white; }
-  .nav-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px; border-radius: 9px; color: rgba(255,255,255,.7);
-    text-decoration: none; font-size: 14.5px; font-weight: 500; cursor: pointer;
-  }
-  .nav-item:hover { background: rgba(255,255,255,.06); color: white; }
-  .nav-item.active { background: var(--blue); color: white; }
-  .sidebar-bottom { margin-top: auto; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.08); font-size: 13px; color: rgba(255,255,255,.6); }
-  .saldo-box { background: rgba(255,255,255,.05); padding: 14px; border-radius: 10px; margin-bottom: 12px; }
-  .saldo-num { font-size: 22px; font-weight: 800; color: white; letter-spacing: -0.5px; }
-  .saldo-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,.55); }
-
-  main { padding: 32px 40px; }
-  .page-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 26px; }
-  .page-head h1 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
-  .page-head .user-chip { display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: white; border: 1px solid var(--gray-100); border-radius: 999px; font-size: 13px; color: var(--gray-700); }
-
-  .card { background: white; border-radius: 14px; box-shadow: 0 1px 3px rgba(10,37,64,.05), 0 4px 12px rgba(10,37,64,.04); padding: 28px; border: 1px solid var(--gray-100); }
-  .card-head { margin-bottom: 16px; }
-  .card-head h2 { margin: 0 0 4px; font-size: 18px; font-weight: 700; }
-  .card-head p { margin: 0; color: var(--gray-500); font-size: 13.5px; }
-
-  .grid-2 { display: grid; grid-template-columns: 1fr 1.4fr; gap: 22px; align-items: start; }
-
-  /* Form */
-  label { display: block; font-size: 13px; font-weight: 600; margin: 14px 0 6px; color: var(--navy); }
-  input, select {
-    width: 100%; padding: 11px 13px; border-radius: 10px;
-    border: 1px solid var(--gray-200); font-family: inherit; font-size: 14.5px;
-    background: white; color: var(--navy); outline: none;
-    transition: border .15s ease, box-shadow .15s ease;
-  }
-  input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,112,243,.15); }
-  input.mono { font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-
-  .tier-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 8px; }
-  .tier-pick {
-    border: 1.5px solid var(--gray-200); border-radius: 10px;
-    padding: 12px 14px; cursor: pointer; transition: all .15s ease;
-    background: white;
-  }
-  .tier-pick:hover { border-color: var(--blue); background: var(--blue-bg); }
-  .tier-pick.selected { border-color: var(--blue); background: var(--blue-bg); box-shadow: 0 0 0 3px rgba(0,112,243,.12); }
-  .tier-pick .tname { font-weight: 700; font-size: 14px; }
-  .tier-pick .tprice { font-size: 13px; color: var(--gray-500); margin-top: 2px; }
-
-  button.cta {
-    width: 100%; margin-top: 18px;
-    background: var(--blue); color: white; border: 0;
-    padding: 14px; border-radius: 11px;
-    font-weight: 700; font-size: 15px; cursor: pointer;
-    box-shadow: 0 4px 14px rgba(0,112,243,.3);
-  }
-  button.cta:hover { background: #005FD6; }
-  button.cta:disabled { background: var(--gray-200); color: var(--gray-500); cursor: not-allowed; box-shadow: none; }
-  button.ghost { background: transparent; color: var(--blue); border: 1px solid var(--gray-200); }
-
-  /* Result */
-  .result-empty {
-    background: white; border: 1px dashed var(--gray-200); border-radius: 14px;
-    padding: 60px 24px; text-align: center; color: var(--gray-500);
-  }
-  .result-empty svg { color: var(--gray-300); margin-bottom: 12px; }
-
-  .score-card-result { background: white; border-radius: 14px; padding: 28px; border: 1px solid var(--gray-100); box-shadow: 0 4px 16px rgba(10,37,64,.06); }
-  .result-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 22px; padding-bottom: 22px; border-bottom: 1px solid var(--gray-100); }
-  .result-head .who { font-size: 12px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 1px; }
-  .result-head .name { font-weight: 700; font-size: 18px; margin-top: 4px; }
-  .result-head .rfc { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--gray-700); margin-top: 2px; }
-  .pill { padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
-  .pill.green { background: var(--green-bg); color: var(--green); }
-  .pill.amber { background: var(--amber-bg); color: var(--amber); }
-  .pill.orange { background: var(--orange-bg); color: var(--orange); }
-  .pill.red { background: var(--red-bg); color: var(--red); }
-
-  .gauge-box { display: flex; gap: 28px; align-items: center; padding: 8px 0 22px; }
-  .gauge-svg { width: 150px; height: 150px; flex-shrink: 0; }
-  .gauge-side .label-small { font-size: 11.5px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 1px; }
-  .gauge-side .verdict { font-size: 22px; font-weight: 800; margin: 4px 0 8px; }
-  .verdict.green { color: var(--green); }
-  .verdict.amber { color: var(--amber); }
-  .verdict.orange { color: var(--orange); }
-  .verdict.red { color: var(--red); }
-  .gauge-side .verdict-sub { font-size: 14px; color: var(--gray-700); line-height: 1.5; }
-
-  .checks-list { display: grid; gap: 10px; margin-top: 8px; }
-  .check-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 16px; background: var(--gray-50); border-radius: 11px;
-    font-size: 14px; border-left: 3px solid var(--gray-200);
-  }
-  .check-row.green { border-left-color: var(--green); }
-  .check-row.amber { border-left-color: var(--amber); }
-  .check-row.red { border-left-color: var(--red); }
-  .check-row.orange { border-left-color: var(--orange); }
-  .check-row .label { color: var(--gray-700); display: flex; flex-direction: column; gap: 3px; }
-  .check-row .label strong { color: var(--navy); font-weight: 600; }
-  .check-row .label small { font-size: 12.5px; color: var(--gray-500); }
-  .check-row .status { font-weight: 700; font-size: 13px; white-space: nowrap; padding-left: 14px; }
-  .check-row.green .status { color: var(--green); }
-  .check-row.amber .status { color: var(--amber); }
-  .check-row.red .status { color: var(--red); }
-
-  .banderas { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--gray-100); }
-  .banderas h4 { margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--gray-500); }
-  .bandera { display: flex; gap: 10px; padding: 12px 14px; background: var(--gray-50); border-radius: 10px; margin-bottom: 8px; font-size: 14px; align-items: flex-start; }
-  .bandera-icon { color: var(--red); flex-shrink: 0; margin-top: 2px; }
-  .bandera.media .bandera-icon { color: var(--amber); }
-  .bandera.baja .bandera-icon { color: var(--gray-500); }
-
-  /* Modal login */
-  .modal-bg { position: fixed; inset: 0; background: rgba(10,37,64,.5); display: none; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
-  .modal-bg.show { display: flex; }
-  .modal { background: white; border-radius: 16px; padding: 32px; width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(10,37,64,.3); }
-  .modal h3 { margin: 0 0 6px; font-size: 22px; }
-  .modal p { color: var(--gray-500); margin: 0 0 20px; font-size: 14px; }
-  .tabs { display: flex; gap: 4px; background: var(--gray-100); padding: 4px; border-radius: 10px; margin-bottom: 18px; }
-  .tab { flex: 1; padding: 9px; border-radius: 7px; cursor: pointer; text-align: center; font-size: 14px; font-weight: 600; color: var(--gray-700); }
-  .tab.active { background: white; color: var(--navy); box-shadow: 0 1px 3px rgba(0,0,0,.06); }
-
-  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: white; padding: 14px 18px; border-radius: 10px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.2); z-index: 300; display: none; }
-  .toast.show { display: block; }
-  .toast.error { background: var(--red); }
-
-  @media (max-width: 880px) {
-    .app { grid-template-columns: 1fr; }
-    aside { display: none; }
-    main { padding: 22px; }
-    .grid-2 { grid-template-columns: 1fr; }
-  }
+  body { -webkit-font-smoothing: antialiased; }
+  .text-balance { text-wrap: balance; }
+  details summary::-webkit-details-marker { display:none; }
+  /* ring spinner */
+  .spinner { width:18px; height:18px; border:2px solid currentColor; border-top-color: transparent; border-radius:50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  /* monospace input chip */
+  .mono { font-family: 'JetBrains Mono', monospace; letter-spacing: .03em; }
 </style>
 </head>
-<body>
+<body class="bg-ink-50/40 text-ink-900 font-sans min-h-screen">
 
-<div class="app">
-  <aside>
-    <div class="brand">
-      <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L4 6 V11 C4 16 7 20 12 22 C17 20 20 16 20 11 V6 Z"/><path d="M9 12 L11 14 L15 10"/></svg></span>
-      TrustScore MX
+<!-- ===== APP SHELL ===== -->
+<div class="grid md:grid-cols-[260px_1fr] min-h-screen">
+
+  <!-- SIDEBAR -->
+  <aside class="bg-ink-950 text-ink-300 hidden md:flex flex-col">
+    <div class="p-5 flex items-center gap-2.5">
+      <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-brand-700 to-accent-600">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-white"><path d="M12 2 L4 6 V11 C4 16 7 20 12 22 C17 20 20 16 20 11 V6 Z"/><path d="M9 12 L11 14 L15 10"/></svg>
+      </span>
+      <a href="index.html" class="text-white font-semibold tracking-tight">TrustScore <span class="text-brand-300">MX</span></a>
     </div>
-    <a class="nav-item active" onclick="showView('verify')">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      Nueva consulta
-    </a>
-    <a class="nav-item" onclick="showView('history')">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 7v5l3 3"/></svg>
-      Histórico
-    </a>
-    <a class="nav-item" onclick="showView('billing')">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-      Recargar saldo
-    </a>
-    <a class="nav-item" onclick="showView('apikey')">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-      API Key
-    </a>
 
-    <div class="sidebar-bottom">
-      <div class="saldo-box">
-        <div class="saldo-num" id="saldoNum">—</div>
-        <div class="saldo-label" id="saldoLabel">Cargando…</div>
+    <nav class="px-3 mt-2 flex flex-col gap-1">
+      <button data-view="verify"  class="nav-item active flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/5 hover:text-white transition w-full text-left">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-5-5"/></svg>
+        Nueva consulta
+      </button>
+      <button data-view="history" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/5 hover:text-white transition w-full text-left">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        Histórico
+      </button>
+      <button data-view="bulk" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/5 hover:text-white transition w-full text-left">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Bulk CSV
+      </button>
+      <button data-view="monitor" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/5 hover:text-white transition w-full text-left">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/></svg>
+        Monitoreo
+      </button>
+      <button data-view="billing" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/5 hover:text-white transition w-full text-left">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Facturación
+      </button>
+      <button data-view="apikey" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/5 hover:text-white transition w-full text-left">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3"/></svg>
+        API Key
+      </button>
+    </nav>
+
+    <div class="mt-auto p-4">
+      <div class="rounded-xl bg-white/5 border border-white/10 p-4 mb-3">
+        <div class="text-[10px] uppercase tracking-widest text-ink-500 font-semibold">Saldo</div>
+        <div id="sbBalance" class="text-2xl font-extrabold text-white tracking-tight mt-0.5">—</div>
+        <div id="sbFree" class="text-xs text-ink-400 mt-1">— consultas gratis</div>
+        <button data-view="billing" class="mt-3 w-full text-xs font-semibold bg-brand-700 hover:bg-brand-600 text-white rounded-lg py-2 transition">Recargar saldo</button>
       </div>
-      <a class="nav-item" onclick="logout()" style="color:rgba(255,255,255,.45);">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <button onclick="logout()" class="text-xs text-ink-500 hover:text-white transition flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Cerrar sesión
-      </a>
+      </button>
     </div>
   </aside>
 
-  <main>
-    <div class="page-head">
-      <h1 id="pageTitle">Verificar a alguien</h1>
-      <div class="user-chip" id="userChip">No has iniciado sesión</div>
-    </div>
+  <!-- MAIN -->
+  <main class="px-6 lg:px-10 py-8 max-w-6xl mx-auto w-full">
 
-    <!-- VERIFICAR -->
-    <div id="view-verify">
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-head">
-            <h2>Datos del evaluado</h2>
-            <p>Captura los datos. RFC es obligatorio. Cuanto más completos, mejor el reporte.</p>
-          </div>
-          <label>RFC <span style="color:var(--red)">*</span></label>
-          <input id="i_rfc" class="mono" placeholder="XAXX010101000" maxlength="13" />
-
-          <div class="row">
-            <div>
-              <label>Nombre / Razón social</label>
-              <input id="i_nombre" placeholder="Comercializadora Beta SA de CV" />
-            </div>
-            <div>
-              <label>CURP (opcional)</label>
-              <input id="i_curp" class="mono" maxlength="18" placeholder="GOMA800101HDFMRR04" />
-            </div>
-          </div>
-
-          <label>Tier de consulta</label>
-          <div class="tier-grid">
-            <div class="tier-pick selected" data-tier="express" onclick="pickTier('express')">
-              <div class="tname">Express</div>
-              <div class="tprice">$49 MXN · 5 fuentes públicas</div>
-            </div>
-            <div class="tier-pick" data-tier="estandar" onclick="pickTier('estandar')">
-              <div class="tname">Estándar</div>
-              <div class="tprice">$149 MXN · + INE + OFAC</div>
-            </div>
-            <div class="tier-pick" data-tier="profesional" onclick="pickTier('profesional')">
-              <div class="tname">Profesional</div>
-              <div class="tprice">$399 MXN · + Litigios</div>
-            </div>
-            <div class="tier-pick" data-tier="enterprise" onclick="pickTier('enterprise')">
-              <div class="tname">Enterprise</div>
-              <div class="tprice">$799 MXN · + Buró</div>
-            </div>
-          </div>
-
-          <button class="cta" onclick="ejecutarConsulta()" id="btnConsulta">Ejecutar consulta →</button>
-          <p style="font-size:12.5px;color:var(--gray-500);margin-top:10px;text-align:center;">Tienes <strong id="gratisLeft">—</strong> consultas Express gratis este mes.</p>
-        </div>
-
-        <div id="resultPane">
-          <div class="result-empty">
-            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L4 6 V11 C4 16 7 20 12 22 C17 20 20 16 20 11 V6 Z"/></svg>
-            <h3 style="margin:6px 0 4px;color:var(--navy);">El reporte aparecerá aquí</h3>
-            <p style="margin:0;font-size:14px;">Captura un RFC y dale a "Ejecutar consulta".</p>
-          </div>
-        </div>
+    <!-- TOP BAR -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 id="pageTitle" class="text-2xl font-extrabold tracking-tight">Nueva consulta</h1>
+        <p id="pageSubtitle" class="text-sm text-ink-500 mt-0.5">Captura un RFC para evaluar la confianza.</p>
+      </div>
+      <div id="userChip" class="hidden md:inline-flex items-center gap-2 bg-white border border-ink-200 rounded-full px-3 py-1.5 text-sm">
+        <span class="w-7 h-7 rounded-full bg-gradient-to-br from-brand-600 to-accent-500 text-white flex items-center justify-center text-xs font-bold" id="userInitial">—</span>
+        <span class="font-medium text-ink-800" id="userName">No autenticado</span>
       </div>
     </div>
 
-    <!-- HISTORICO -->
-    <div id="view-history" style="display:none;">
-      <div class="card">
-        <div class="card-head">
-          <h2>Tus consultas</h2>
-          <p>Las últimas 50 consultas que has hecho. Puedes abrir cualquier reporte para verlo de nuevo.</p>
-        </div>
-        <div id="historyList"></div>
-      </div>
-    </div>
+    <!-- ============ VERIFY VIEW ============ -->
+    <section id="view-verify" class="grid lg:grid-cols-[420px_1fr] gap-6 items-start">
 
-    <!-- BILLING -->
-    <div id="view-billing" style="display:none;">
-      <div class="card">
-        <div class="card-head">
-          <h2>Recarga tu saldo</h2>
-          <p>Compra paquetes con bono. El saldo nunca expira.</p>
+      <div class="rounded-2xl bg-white border border-ink-200 p-6 shadow-sm">
+        <div class="text-[11px] uppercase tracking-widest text-ink-400 font-semibold mb-3">DATOS DEL EVALUADO</div>
+
+        <label class="text-sm font-medium block">RFC <span class="text-danger-600">*</span></label>
+        <input id="i_rfc" maxlength="13" placeholder="EJE850101A11" class="mono mt-1.5 w-full rounded-lg border border-ink-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition uppercase" />
+
+        <label class="text-sm font-medium block mt-4">Nombre / Razón social</label>
+        <input id="i_nombre" placeholder="Comercializadora Beta SA de CV" class="mt-1.5 w-full rounded-lg border border-ink-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition" />
+
+        <label class="text-sm font-medium block mt-4">CURP (opcional)</label>
+        <input id="i_curp" maxlength="18" placeholder="GOMA800101HDFMRR04" class="mono mt-1.5 w-full rounded-lg border border-ink-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition uppercase" />
+
+        <div class="text-[11px] uppercase tracking-widest text-ink-400 font-semibold mt-6 mb-3">TIER DE CONSULTA</div>
+        <div class="grid grid-cols-2 gap-2">
+          <button class="tier-pick selected" data-tier="express">
+            <div class="text-sm font-bold">Express</div>
+            <div class="text-[11px] text-ink-500 mt-0.5">$49 · SAT + DOF</div>
+          </button>
+          <button class="tier-pick" data-tier="estandar">
+            <div class="text-sm font-bold">Estándar</div>
+            <div class="text-[11px] text-ink-500 mt-0.5">$149 · + OFAC + INE</div>
+          </button>
+          <button class="tier-pick" data-tier="profesional">
+            <div class="text-sm font-bold">Profesional</div>
+            <div class="text-[11px] text-ink-500 mt-0.5">$399 · + Litigios</div>
+          </button>
+          <button class="tier-pick" data-tier="enterprise">
+            <div class="text-sm font-bold">Enterprise</div>
+            <div class="text-[11px] text-ink-500 mt-0.5">$799 · + Buró</div>
+          </button>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
-          <div class="card" style="text-align:center;cursor:pointer;" onclick="comprar('paquete_500')">
-            <div style="font-size:28px;font-weight:800;letter-spacing:-1px;">$500 <small style="font-size:14px;color:var(--gray-500);">MXN</small></div>
-            <div style="color:var(--green);font-weight:700;font-size:14px;margin:8px 0;">+ $100 de bonus</div>
-            <div style="font-size:13px;color:var(--gray-500);">Total: 600 créditos</div>
+
+        <button id="btnConsultar" class="mt-6 w-full bg-ink-900 hover:bg-ink-950 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition">
+          <span id="btnLabel">Ejecutar consulta</span>
+          <svg id="btnSpinner" class="w-4 h-4 animate-spin hidden" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" stroke-opacity=".3"/><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+        </button>
+
+        <p class="mt-3 text-center text-xs text-ink-500">Tienes <strong id="freeLeft" class="text-ink-900">—</strong> consultas Express gratis</p>
+      </div>
+
+      <div id="resultPane">
+        <div class="rounded-2xl border border-dashed border-ink-200 bg-white py-20 text-center">
+          <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-ink-100 text-ink-400 mb-3">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 L4 6 V11 C4 16 7 20 12 22 C17 20 20 16 20 11 V6 Z"/></svg>
           </div>
-          <div class="card" style="text-align:center;cursor:pointer;border-color:var(--blue);" onclick="comprar('paquete_2000')">
-            <div style="font-size:28px;font-weight:800;letter-spacing:-1px;">$2,000 <small style="font-size:14px;color:var(--gray-500);">MXN</small></div>
-            <div style="color:var(--green);font-weight:700;font-size:14px;margin:8px 0;">+ $600 de bonus</div>
-            <div style="font-size:13px;color:var(--gray-500);">Total: 2,600 créditos</div>
-          </div>
-          <div class="card" style="text-align:center;cursor:pointer;" onclick="comprar('paquete_5000')">
-            <div style="font-size:28px;font-weight:800;letter-spacing:-1px;">$5,000 <small style="font-size:14px;color:var(--gray-500);">MXN</small></div>
-            <div style="color:var(--green);font-weight:700;font-size:14px;margin:8px 0;">+ $2,000 de bonus</div>
-            <div style="font-size:13px;color:var(--gray-500);">Total: 7,000 créditos</div>
-          </div>
+          <div class="font-semibold">El reporte aparecerá aquí</div>
+          <div class="text-sm text-ink-500 mt-1">Captura un RFC y dale a "Ejecutar consulta".</div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- API KEY -->
-    <div id="view-apikey" style="display:none;">
-      <div class="card">
-        <div class="card-head">
-          <h2>Tu API Key</h2>
-          <p>Úsala para integrar TrustScore con tus sistemas. Header <code>X-API-Key: tsmx_...</code></p>
+    <!-- ============ HISTORY VIEW ============ -->
+    <section id="view-history" class="hidden">
+      <div class="rounded-2xl bg-white border border-ink-200 overflow-hidden shadow-sm">
+        <div id="historyList" class="divide-y divide-ink-100">
+          <div class="p-12 text-center text-ink-500 text-sm">Cargando histórico…</div>
         </div>
-        <button class="cta" onclick="generarApiKey()" style="max-width:280px;">Generar nueva API key</button>
-        <div id="apikeyResult" style="margin-top:18px;"></div>
-        <h3 style="margin-top:30px;font-size:15px;">Ejemplo de uso (curl):</h3>
-        <pre style="background:#0E2E54;color:#A6E3A1;padding:18px;border-radius:10px;overflow:auto;font-size:13px;line-height:1.6;font-family:'JetBrains Mono',monospace;">curl -X POST <span id="apiBase">http://localhost:8000</span>/api/v1/check/express \
-  -H "X-API-Key: tsmx_TU_LLAVE_AQUI" \
+      </div>
+    </section>
+
+    <!-- ============ BULK ============ -->
+    <section id="view-bulk" class="hidden">
+      <div class="rounded-2xl bg-white border border-ink-200 p-6 shadow-sm max-w-3xl">
+        <h2 class="font-bold text-lg mb-1">Subir CSV con RFCs</h2>
+        <p class="text-sm text-ink-600 mb-5">Hasta 500 filas. Formato: <code class="font-mono text-xs bg-ink-100 px-1.5 py-0.5 rounded">rfc,nombre</code> con o sin header.</p>
+
+        <label class="block">
+          <input id="bulkFile" type="file" accept=".csv" class="block w-full text-sm text-ink-700 file:mr-4 file:py-2.5 file:px-5 file:rounded-lg file:border-0 file:bg-ink-900 file:text-white file:text-sm file:font-semibold hover:file:bg-ink-800 file:cursor-pointer cursor-pointer" />
+        </label>
+
+        <button id="btnBulk" class="mt-5 bg-ink-900 hover:bg-ink-950 text-white font-semibold px-5 py-2.5 rounded-lg flex items-center gap-2">
+          <span id="bulkLabel">Procesar y descargar resultado</span>
+          <svg id="bulkSpinner" class="w-4 h-4 animate-spin hidden" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" stroke-opacity=".3"/><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+        </button>
+        <div id="bulkResult" class="mt-4 text-sm"></div>
+      </div>
+    </section>
+
+    <!-- ============ MONITOR ============ -->
+    <section id="view-monitor" class="hidden">
+      <div class="rounded-2xl bg-white border border-ink-200 p-6 shadow-sm max-w-3xl">
+        <h2 class="font-bold text-lg mb-1">RFCs monitoreados</h2>
+        <p class="text-sm text-ink-600 mb-5">Te alertamos automáticamente cuando un RFC monitoreado cambia de status (entra a 69-B, aparece en DOF, etc.).</p>
+
+        <div class="flex gap-2 mb-6">
+          <input id="monRfc" placeholder="RFC a monitorear" class="mono flex-1 rounded-lg border border-ink-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 uppercase" />
+          <button id="btnMonAdd" class="bg-ink-900 hover:bg-ink-950 text-white font-semibold px-4 py-2.5 rounded-lg text-sm">Suscribir</button>
+        </div>
+
+        <div id="monitorList" class="divide-y divide-ink-100 border-t border-ink-100"></div>
+      </div>
+    </section>
+
+    <!-- ============ BILLING ============ -->
+    <section id="view-billing" class="hidden">
+      <h2 class="font-bold text-lg mb-1">Recargar saldo</h2>
+      <p class="text-sm text-ink-600 mb-6">Compra paquetes con bono. El saldo nunca expira.</p>
+
+      <div class="grid md:grid-cols-3 gap-4 max-w-4xl">
+        <div class="rounded-2xl bg-white border border-ink-200 p-6 lift cursor-pointer transition hover:border-ink-300" onclick="comprar('paquete_500')">
+          <div class="text-3xl font-extrabold tracking-tight">$500 <span class="text-sm text-ink-500 font-medium">MXN</span></div>
+          <div class="mt-2 inline-flex items-center gap-1 bg-accent-500/10 text-accent-600 text-xs font-bold px-2 py-1 rounded-full">+ $100 bonus</div>
+          <div class="text-sm text-ink-600 mt-3">Total: <strong>600 créditos</strong></div>
+        </div>
+        <div class="rounded-2xl bg-ink-950 text-white p-6 lift cursor-pointer transition relative" onclick="comprar('paquete_2000')">
+          <div class="absolute -top-3 left-6 bg-accent-500 text-ink-950 text-[10px] uppercase tracking-widest font-bold px-2.5 py-0.5 rounded-full">Mejor valor</div>
+          <div class="text-3xl font-extrabold tracking-tight">$2,000 <span class="text-sm text-ink-400 font-medium">MXN</span></div>
+          <div class="mt-2 inline-flex items-center gap-1 bg-accent-500/20 text-accent-400 text-xs font-bold px-2 py-1 rounded-full">+ $600 bonus</div>
+          <div class="text-sm text-ink-300 mt-3">Total: <strong>2,600 créditos</strong></div>
+        </div>
+        <div class="rounded-2xl bg-white border border-ink-200 p-6 lift cursor-pointer transition hover:border-ink-300" onclick="comprar('paquete_5000')">
+          <div class="text-3xl font-extrabold tracking-tight">$5,000 <span class="text-sm text-ink-500 font-medium">MXN</span></div>
+          <div class="mt-2 inline-flex items-center gap-1 bg-accent-500/10 text-accent-600 text-xs font-bold px-2 py-1 rounded-full">+ $2,000 bonus</div>
+          <div class="text-sm text-ink-600 mt-3">Total: <strong>7,000 créditos</strong></div>
+        </div>
+      </div>
+
+      <h3 class="font-bold text-base mt-12 mb-4">Suscripciones mensuales</h3>
+      <div class="grid md:grid-cols-3 gap-4 max-w-4xl">
+        <div class="rounded-2xl bg-white border border-ink-200 p-6 cursor-pointer transition hover:border-ink-300" onclick="suscribir('starter')">
+          <div class="text-xs uppercase tracking-wider text-ink-500 font-bold">Starter</div>
+          <div class="text-3xl font-extrabold tracking-tight mt-2">$499<span class="text-sm text-ink-500 font-medium">/mes</span></div>
+          <div class="text-sm text-ink-600 mt-2">15 Express/mes</div>
+        </div>
+        <div class="rounded-2xl bg-white border-2 border-brand-500 p-6 cursor-pointer transition shadow-md shadow-brand-500/10" onclick="suscribir('growth')">
+          <div class="text-xs uppercase tracking-wider text-brand-600 font-bold">Growth · más popular</div>
+          <div class="text-3xl font-extrabold tracking-tight mt-2">$1,999<span class="text-sm text-ink-500 font-medium">/mes</span></div>
+          <div class="text-sm text-ink-600 mt-2">30 Express + 20 Estándar/mes</div>
+        </div>
+        <div class="rounded-2xl bg-white border border-ink-200 p-6 cursor-pointer transition hover:border-ink-300" onclick="suscribir('pro')">
+          <div class="text-xs uppercase tracking-wider text-ink-500 font-bold">Pro</div>
+          <div class="text-3xl font-extrabold tracking-tight mt-2">$4,999<span class="text-sm text-ink-500 font-medium">/mes</span></div>
+          <div class="text-sm text-ink-600 mt-2">100 + 50 + 20 / mes</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ API KEY ============ -->
+    <section id="view-apikey" class="hidden">
+      <div class="rounded-2xl bg-white border border-ink-200 p-6 shadow-sm max-w-3xl">
+        <h2 class="font-bold text-lg mb-1">Tu API Key</h2>
+        <p class="text-sm text-ink-600 mb-5">Úsala para integrar con tus sistemas. Header: <code class="mono text-xs bg-ink-100 px-1.5 py-0.5 rounded">X-API-Key: tsmx_•••</code></p>
+
+        <button id="btnApiKey" class="bg-ink-900 hover:bg-ink-950 text-white font-semibold px-5 py-2.5 rounded-lg text-sm">Generar nueva API key</button>
+        <div id="apiKeyResult" class="mt-4"></div>
+
+        <div class="mt-8">
+          <div class="text-xs uppercase tracking-widest text-ink-500 font-semibold mb-2">Ejemplo curl</div>
+          <pre class="rounded-xl bg-ink-950 text-ink-100 p-5 text-xs leading-relaxed overflow-x-auto mono">curl -X POST <span id="apiBase">https://api.trustscoremx.com</span>/api/v1/check/express \
+  -H "X-API-Key: tsmx_TU_LLAVE" \
   -H "Content-Type: application/json" \
-  -d '{"rfc":"EJE850101A11","nombre":"Comercializadora Ejemplo Trucha"}'</pre>
+  -d '{"rfc":"EJE850101A11","nombre":"Comercializadora Trucha"}'</pre>
+        </div>
       </div>
-    </div>
+    </section>
   </main>
 </div>
 
-<!-- LOGIN MODAL -->
-<div class="modal-bg" id="loginModal">
-  <div class="modal">
-    <h3>Empezar con TrustScore MX</h3>
-    <p>5 consultas Express gratis. Sin tarjeta.</p>
-    <div class="tabs">
-      <div class="tab active" id="tab-signup" onclick="switchTab('signup')">Crear cuenta</div>
-      <div class="tab" id="tab-login" onclick="switchTab('login')">Iniciar sesión</div>
+<!-- ===== AUTH MODAL ===== -->
+<div id="authModal" class="fixed inset-0 bg-ink-950/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-md p-7 shadow-2xl">
+    <h3 class="font-extrabold text-2xl tracking-tight">Empezar con TrustScore MX</h3>
+    <p class="text-sm text-ink-500 mt-1 mb-5">5 consultas gratis. Sin tarjeta.</p>
+
+    <div class="flex gap-1 bg-ink-100 p-1 rounded-lg mb-5">
+      <button id="tabSignup" class="flex-1 py-2 rounded-md text-sm font-semibold bg-white shadow-sm">Crear cuenta</button>
+      <button id="tabLogin"  class="flex-1 py-2 rounded-md text-sm font-medium text-ink-600">Iniciar sesión</button>
     </div>
-    <div id="form-signup">
-      <label>Tu nombre</label><input id="s_nombre" placeholder="Víctor Rev" />
-      <label>Empresa (opcional)</label><input id="s_empresa" placeholder="Mi negocio SA" />
-      <label>Correo</label><input id="s_email" type="email" placeholder="tu@correo.mx" />
-      <label>Contraseña (8+ caracteres)</label><input id="s_pass" type="password" />
-      <button class="cta" onclick="signup()">Crear cuenta</button>
+
+    <div id="formSignup">
+      <label class="text-sm font-medium">Tu nombre</label>
+      <input id="s_nombre" class="mt-1.5 mb-3 w-full rounded-lg border border-ink-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="Víctor R" />
+      <label class="text-sm font-medium">Empresa (opcional)</label>
+      <input id="s_empresa" class="mt-1.5 mb-3 w-full rounded-lg border border-ink-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="Mi negocio SA" />
+      <label class="text-sm font-medium">Correo</label>
+      <input id="s_email" type="email" class="mt-1.5 mb-3 w-full rounded-lg border border-ink-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="tu@correo.mx" />
+      <label class="text-sm font-medium">Contraseña <span class="text-xs text-ink-500 font-normal">(mín. 8)</span></label>
+      <input id="s_pass" type="password" class="mt-1.5 mb-5 w-full rounded-lg border border-ink-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+      <button onclick="signup()" class="w-full bg-ink-900 hover:bg-ink-950 text-white font-semibold py-2.5 rounded-lg text-sm">Crear cuenta</button>
+      <p class="text-xs text-ink-500 text-center mt-3">Al registrarte aceptas nuestros <a href="legal/terminos.html" class="underline">Términos</a> y <a href="legal/privacidad.html" class="underline">Aviso de privacidad</a>.</p>
     </div>
-    <div id="form-login" style="display:none;">
-      <label>Correo</label><input id="l_email" type="email" />
-      <label>Contraseña</label><input id="l_pass" type="password" />
-      <button class="cta" onclick="login()">Entrar</button>
+
+    <div id="formLogin" class="hidden">
+      <label class="text-sm font-medium">Correo</label>
+      <input id="l_email" type="email" class="mt-1.5 mb-3 w-full rounded-lg border border-ink-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+      <label class="text-sm font-medium">Contraseña</label>
+      <input id="l_pass" type="password" class="mt-1.5 mb-5 w-full rounded-lg border border-ink-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+      <button onclick="login()" class="w-full bg-ink-900 hover:bg-ink-950 text-white font-semibold py-2.5 rounded-lg text-sm">Entrar</button>
     </div>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<!-- ===== TOAST ===== -->
+<div id="toast" class="fixed bottom-6 right-6 z-50 hidden bg-ink-900 text-white px-4 py-3 rounded-xl shadow-2xl text-sm max-w-sm"></div>
+
+<style>
+  .nav-item.active { background: rgba(255,255,255,0.08); color: white; }
+  .nav-item.active svg { color: #34D399; }
+  .tier-pick { padding: 10px 12px; border:1.5px solid #E2E8F0; border-radius: 10px; background:white; text-align:left; transition: all .15s; cursor:pointer; }
+  .tier-pick:hover { border-color: #94A3B8; }
+  .tier-pick.selected { border-color: #2563EB; background: #EFF6FF; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+  .lift { transition: transform .25s cubic-bezier(.16,1,.3,1), box-shadow .25s; }
+  .lift:hover { transform: translateY(-2px); box-shadow: 0 18px 36px -18px rgba(15,23,42,.18); }
+</style>
 
 <script>
 const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:')
   ? 'http://localhost:8000'
   : 'https://api.trustscoremx.com';
-document.getElementById('apiBase').textContent = API;
 
 let token = localStorage.getItem('tsmx_token');
-let tier = 'express';
 let me = null;
+let currentTier = 'express';
 
+function $(id) { return document.getElementById(id); }
 function toast(msg, error=false) {
-  const t = document.getElementById('toast');
+  const t = $('toast');
   t.textContent = msg;
-  t.className = 'toast show' + (error ? ' error' : '');
-  setTimeout(() => t.className = 'toast', 3500);
-}
-
-function pickTier(t) {
-  tier = t;
-  document.querySelectorAll('.tier-pick').forEach(el => {
-    el.classList.toggle('selected', el.dataset.tier === t);
-  });
-}
-
-function showView(name) {
-  ['verify','history','billing','apikey'].forEach(v => {
-    document.getElementById('view-'+v).style.display = (v === name) ? '' : 'none';
-  });
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  event && event.currentTarget && event.currentTarget.classList.add('active');
-  const titles = {verify:'Verificar a alguien', history:'Histórico de consultas', billing:'Recargar saldo', apikey:'API Key'};
-  document.getElementById('pageTitle').textContent = titles[name];
-  if (name === 'history') cargarHistorico();
-}
-
-function switchTab(which) {
-  document.getElementById('tab-signup').classList.toggle('active', which==='signup');
-  document.getElementById('tab-login').classList.toggle('active', which==='login');
-  document.getElementById('form-signup').style.display = which==='signup' ? '' : 'none';
-  document.getElementById('form-login').style.display = which==='login' ? '' : 'none';
+  t.className = 'fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-2xl text-sm max-w-sm ' + (error ? 'bg-danger-600 text-white' : 'bg-ink-900 text-white');
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3500);
 }
 
 async function api(path, opts={}) {
@@ -396,206 +339,318 @@ async function api(path, opts={}) {
   return data;
 }
 
+// ================= AUTH =================
+function showAuth() { $('authModal').classList.remove('hidden'); $('authModal').classList.add('flex'); }
+function hideAuth() { $('authModal').classList.add('hidden');    $('authModal').classList.remove('flex'); }
+
+$('tabSignup').addEventListener('click', () => {
+  $('tabSignup').classList.add('bg-white','shadow-sm','font-semibold');  $('tabSignup').classList.remove('text-ink-600','font-medium');
+  $('tabLogin').classList.remove('bg-white','shadow-sm','font-semibold');$('tabLogin').classList.add('text-ink-600','font-medium');
+  $('formSignup').classList.remove('hidden'); $('formLogin').classList.add('hidden');
+});
+$('tabLogin').addEventListener('click', () => {
+  $('tabLogin').classList.add('bg-white','shadow-sm','font-semibold');   $('tabLogin').classList.remove('text-ink-600','font-medium');
+  $('tabSignup').classList.remove('bg-white','shadow-sm','font-semibold');$('tabSignup').classList.add('text-ink-600','font-medium');
+  $('formLogin').classList.remove('hidden'); $('formSignup').classList.add('hidden');
+});
+
 async function signup() {
   try {
-    const r = await api('/api/v1/auth/signup', {method:'POST', body: {
-      nombre: document.getElementById('s_nombre').value,
-      empresa: document.getElementById('s_empresa').value,
-      email: document.getElementById('s_email').value,
-      password: document.getElementById('s_pass').value,
+    const r = await api('/api/v1/auth/signup', { method:'POST', body:{
+      nombre:  $('s_nombre').value,
+      empresa: $('s_empresa').value,
+      email:   $('s_email').value,
+      password:$('s_pass').value,
     }});
     token = r.token; localStorage.setItem('tsmx_token', token);
-    toast('Cuenta creada. Bienvenido.');
-    document.getElementById('loginModal').classList.remove('show');
-    cargarPerfil();
+    toast('Cuenta creada. ¡Bienvenido!');
+    hideAuth(); cargarPerfil();
   } catch(e) { toast(e.message, true); }
 }
-
 async function login() {
   try {
-    const r = await api('/api/v1/auth/login', {method:'POST', body: {
-      email: document.getElementById('l_email').value,
-      password: document.getElementById('l_pass').value,
+    const r = await api('/api/v1/auth/login', { method:'POST', body:{
+      email:   $('l_email').value,
+      password:$('l_pass').value,
     }});
     token = r.token; localStorage.setItem('tsmx_token', token);
-    toast('Sesión iniciada.');
-    document.getElementById('loginModal').classList.remove('show');
-    cargarPerfil();
+    hideAuth(); cargarPerfil();
   } catch(e) { toast(e.message, true); }
 }
-
 function logout() {
-  token = null; localStorage.removeItem('tsmx_token');
-  document.getElementById('loginModal').classList.add('show');
+  token = null; me = null;
+  localStorage.removeItem('tsmx_token');
+  showAuth();
 }
 
 async function cargarPerfil() {
   try {
     me = await api('/api/v1/me');
-    document.getElementById('userChip').textContent = me.nombre + ' · ' + me.email;
-    document.getElementById('saldoNum').textContent = '$' + me.saldo_creditos.toFixed(0);
-    document.getElementById('saldoLabel').textContent = 'créditos · ' + me.consultas_gratis_restantes + ' gratis';
-    document.getElementById('gratisLeft').textContent = me.consultas_gratis_restantes;
-  } catch(e) {
-    document.getElementById('loginModal').classList.add('show');
-  }
+    $('userInitial').textContent = (me.nombre || '?')[0].toUpperCase();
+    $('userName').textContent = me.nombre || me.email;
+    $('userChip').classList.remove('hidden');
+    $('sbBalance').textContent = '$' + Number(me.saldo_creditos || 0).toFixed(0);
+    $('sbFree').textContent = (me.consultas_gratis_restantes ?? 0) + ' consultas gratis';
+    $('freeLeft').textContent = me.consultas_gratis_restantes ?? 0;
+  } catch(e) { showAuth(); }
 }
 
-async function ejecutarConsulta() {
-  const rfc = document.getElementById('i_rfc').value.trim().toUpperCase();
-  const nombre = document.getElementById('i_nombre').value.trim();
-  const curp = document.getElementById('i_curp').value.trim().toUpperCase();
-  if (!rfc || rfc.length < 12) { toast('RFC requerido (12-13 caracteres)', true); return; }
+// ================= NAV =================
+document.querySelectorAll('[data-view]').forEach(btn => {
+  btn.addEventListener('click', () => switchView(btn.dataset.view));
+});
+function switchView(v) {
+  ['verify','history','bulk','monitor','billing','apikey'].forEach(x => {
+    $('view-'+x).classList.toggle('hidden', x !== v);
+  });
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.view === v);
+  });
+  const titles = {
+    verify:  ['Nueva consulta',     'Captura un RFC para evaluar la confianza.'],
+    history: ['Histórico',           'Las últimas 50 consultas que has hecho.'],
+    bulk:    ['Bulk CSV',            'Sube un archivo y procesa hasta 500 RFCs.'],
+    monitor: ['Monitoreo continuo',  'Recibe alertas cuando un RFC cambia de estado.'],
+    billing: ['Facturación',         'Compra créditos o suscríbete.'],
+    apikey:  ['API Key',             'Integra TrustScore MX a tus sistemas.'],
+  };
+  $('pageTitle').textContent = titles[v][0];
+  $('pageSubtitle').textContent = titles[v][1];
+  if (v === 'history') cargarHistorico();
+  if (v === 'monitor') cargarMonitor();
+}
 
-  const btn = document.getElementById('btnConsulta');
-  btn.disabled = true; btn.textContent = 'Consultando…';
+// ================= TIER PICK =================
+document.querySelectorAll('.tier-pick').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tier-pick').forEach(b => b.classList.toggle('selected', b === btn));
+    currentTier = btn.dataset.tier;
+  });
+});
+
+// ================= CONSULTAR =================
+$('btnConsultar').addEventListener('click', async () => {
+  const rfc = $('i_rfc').value.trim().toUpperCase();
+  const nombre = $('i_nombre').value.trim();
+  const curp = $('i_curp').value.trim().toUpperCase();
+  if (!rfc || rfc.length < 12) { toast('RFC requerido (12-13 caracteres)', true); return; }
+  $('btnLabel').textContent = 'Consultando…';
+  $('btnSpinner').classList.remove('hidden');
+  $('btnConsultar').disabled = true;
   try {
-    const r = await api(`/api/v1/check/${tier}`, {method:'POST', body: {rfc, nombre, curp}});
+    const r = await api(`/api/v1/check/${currentTier}`, { method:'POST', body:{rfc, nombre, curp}});
     renderResult(r);
     cargarPerfil();
   } catch(e) { toast(e.message, true); }
-  finally { btn.disabled = false; btn.textContent = 'Ejecutar consulta →'; }
-}
+  finally {
+    $('btnLabel').textContent = 'Ejecutar consulta';
+    $('btnSpinner').classList.add('hidden');
+    $('btnConsultar').disabled = false;
+  }
+});
 
 function renderResult(r) {
   const score = r.score.score;
-  const color = r.score.color;
   const cat = r.score.categoria;
+  const color = r.score.color;
   const recom = r.score.recomendacion;
-  const banderas = r.score.banderas || [];
   const checks = r.checks || {};
+  const banderas = r.score.banderas || [];
 
-  const dashOffset = 314 - (314 * score / 1000);
+  const cmap = { green:{ring:'#10B981',chip:'bg-accent-500/10 text-accent-600',text:'text-accent-600'},
+                 amber:{ring:'#F59E0B',chip:'bg-warn-50 text-warn-600',text:'text-warn-600'},
+                 orange:{ring:'#F97316',chip:'bg-orange-50 text-orange-600',text:'text-orange-600'},
+                 red:{ring:'#DC2626',chip:'bg-danger-50 text-danger-700',text:'text-danger-600'} };
+  const c = cmap[color] || cmap.green;
+  // El score es 0-1000 en el backend pero lo normalizamos a 0-100 para display
+  const score100 = Math.round(score / 10);
+  const dashOffset = 339 - (339 * score100 / 100);
 
-  let html = `
-    <div class="score-card-result">
-      <div class="result-head">
+  function row(label, value, state) {
+    const dot = state === 'ok' ? 'bg-accent-500' : state === 'warn' ? 'bg-warn-500' : 'bg-danger-500';
+    const txt = state === 'ok' ? 'text-accent-600' : state === 'warn' ? 'text-warn-600' : 'text-danger-600';
+    return `<div class="flex items-center justify-between py-3 text-sm"><span class="flex items-center gap-2 text-ink-700"><span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${label}</span><span class="font-semibold ${txt}">${value}</span></div>`;
+  }
+
+  let rows = '';
+  if (checks.sat_69b) rows += row('SAT 69-B (lista negra)', checks.sat_69b.encontrado ? `Encontrado · ${checks.sat_69b.situacion}` : 'No aparece', checks.sat_69b.encontrado ? 'bad' : 'ok');
+  if (checks.rfc) rows += row('Identidad RFC', checks.rfc.valido ? 'Estructura válida' : 'Inválido', checks.rfc.valido ? 'ok' : 'warn');
+  if (checks.ofac_pep) rows += row('OFAC SDN / sanciones', checks.ofac_pep.coincidencias ? `Match: ${(checks.ofac_pep.matches||[])[0]?.name || 'sí'}` : 'Sin coincidencias', checks.ofac_pep.coincidencias ? 'bad' : 'ok');
+  if (checks.boletin_concursal) rows += row('Boletín Concursal IFECOM', checks.boletin_concursal.en_concurso ? 'En concurso' : 'Sin proceso', checks.boletin_concursal.en_concurso ? 'bad' : 'ok');
+  if (checks.dof) rows += row('Sanciones DOF', checks.dof.encontrado ? `${(checks.dof.publicaciones||[]).length} publicaciones` : 'Sin publicaciones', checks.dof.encontrado ? 'warn' : 'ok');
+  if (checks.ine) rows += row('INE / Renapo', checks.ine.verificado ? 'Verificado' : 'No verificable', checks.ine.verificado ? 'ok' : 'warn');
+  if (checks.litigios) rows += row('Litigios judiciales', checks.litigios.litigios_activos ? `${(checks.litigios.casos||[]).length} caso(s)` : 'Sin litigios', checks.litigios.litigios_activos ? 'warn' : 'ok');
+  if (checks.quejas) rows += row('Quejas CONDUSEF/PROFECO', `${(checks.quejas.condusef_quejas||0)+(checks.quejas.profeco_quejas||0)} (${checks.quejas.severidad})`, checks.quejas.severidad === 'grave' ? 'bad' : checks.quejas.severidad === 'moderada' ? 'warn' : 'ok');
+  if (checks.buro) rows += row('Buró de Crédito', `Score ${checks.buro.score_buro} · ${checks.buro.creditos_atrasados} atrasos`, checks.buro.score_buro > 700 ? 'ok' : checks.buro.score_buro > 600 ? 'warn' : 'bad');
+
+  const banderasHtml = banderas.length ? `
+    <div class="mt-6 pt-6 border-t border-ink-100">
+      <div class="text-xs uppercase tracking-widest font-semibold text-ink-500 mb-3">Banderas detectadas</div>
+      ${banderas.map(b => `
+        <div class="flex items-start gap-3 p-4 rounded-xl bg-${b.severidad === 'critica' ? 'danger' : 'warn'}-50 border border-${b.severidad === 'critica' ? 'danger' : 'warn'}-500/20 mb-2">
+          <svg class="w-5 h-5 text-${b.severidad === 'critica' ? 'danger' : 'warn'}-600 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+          <div><div class="text-xs uppercase tracking-wider font-bold text-${b.severidad === 'critica' ? 'danger' : 'warn'}-700">${b.severidad} · ${b.tipo}</div><div class="text-sm text-ink-800 mt-0.5">${b.mensaje}</div></div>
+        </div>
+      `).join('')}
+    </div>` : '';
+
+  $('resultPane').innerHTML = `
+    <div class="rounded-2xl bg-white border border-ink-200 p-7 shadow-sm">
+      <div class="flex items-start justify-between gap-4 mb-6 pb-6 border-b border-ink-100">
         <div>
-          <div class="who">REPORTE TIER ${r.tier.toUpperCase()}</div>
-          <div class="name">${escapeHtml(r.checks.rfc?.tipo === 'persona_moral' ? 'Persona Moral' : (banderas.length===0 ? 'Verificado' : 'Evaluado'))}</div>
-          <div class="rfc">RFC: ${r.rfc}</div>
+          <div class="text-[11px] uppercase tracking-widest text-ink-400 font-semibold">REPORTE TIER ${r.tier.toUpperCase()}</div>
+          <div class="font-semibold text-lg text-ink-900 mt-0.5">${$('i_nombre').value || 'Evaluado'}</div>
+          <div class="text-xs mono text-ink-500 mt-0.5">RFC: ${r.rfc}</div>
         </div>
-        <div class="pill ${color}">
-          ${color==='green'?'✓':'⚠'} ${cat}
-        </div>
+        <span class="${c.chip} text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full inline-flex items-center gap-1.5">${cat}</span>
       </div>
 
-      <div class="gauge-box">
-        <svg class="gauge-svg" viewBox="0 0 120 120">
-          <defs>
-            <linearGradient id="rg" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#0070F3"/>
-              <stop offset="100%" stop-color="${colorHex(color)}"/>
-            </linearGradient>
-          </defs>
-          <circle cx="60" cy="60" r="50" fill="none" stroke="#EEF1F6" stroke-width="11"/>
-          <circle cx="60" cy="60" r="50" fill="none" stroke="url(#rg)" stroke-width="11"
-                  stroke-linecap="round" stroke-dasharray="314"
-                  stroke-dashoffset="${dashOffset}"
-                  style="transform:rotate(-90deg);transform-origin:center;transition:stroke-dashoffset 1s ease"/>
-          <text x="60" y="58" text-anchor="middle" font-family="Inter" font-weight="800" font-size="32" fill="#0A2540">${score}</text>
-          <text x="60" y="76" text-anchor="middle" font-family="Inter" font-size="11" fill="#6B7A90">de 1000</text>
-        </svg>
-        <div class="gauge-side">
-          <div class="label-small">Recomendación</div>
-          <div class="verdict ${color}">${cat}</div>
-          <div class="verdict-sub">${escapeHtml(recom)}</div>
+      <div class="flex items-center gap-7">
+        <div class="relative w-36 h-36 flex-shrink-0">
+          <svg viewBox="0 0 120 120" class="w-full h-full">
+            <circle cx="60" cy="60" r="54" stroke="#E2E8F0" stroke-width="10" fill="none"/>
+            <circle cx="60" cy="60" r="54" stroke="${c.ring}" stroke-width="10" fill="none" stroke-linecap="round"
+                    stroke-dasharray="339" stroke-dashoffset="${dashOffset}"
+                    style="transform:rotate(-90deg);transform-origin:center;transition:stroke-dashoffset 1.4s cubic-bezier(.16,1,.3,1)"/>
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <div class="text-4xl font-extrabold tracking-tight text-ink-900">${score100}</div>
+            <div class="text-[10px] uppercase tracking-wider font-semibold text-ink-400 mt-0.5">de 100</div>
+          </div>
+        </div>
+        <div>
+          <div class="text-[11px] uppercase tracking-widest text-ink-400 font-semibold">Recomendación</div>
+          <div class="text-xl font-bold ${c.text} mt-1">${cat}</div>
+          <p class="text-sm text-ink-700 mt-1.5 max-w-md leading-relaxed">${recom}</p>
         </div>
       </div>
 
-      <div class="checks-list">
-        ${renderCheck('SAT 69-B (lista negra de facturación)', checks.sat_69b?.encontrado ? `Encontrado: ${checks.sat_69b.situacion}` : 'No aparece', checks.sat_69b?.encontrado ? 'red' : 'green')}
-        ${renderCheck('Identidad RFC', checks.rfc?.valido ? 'Válido' : 'Inválido', checks.rfc?.valido ? 'green' : 'red')}
-        ${checks.ine ? renderCheck('Validación INE/Renapo', checks.ine.verificado ? 'Verificado' : 'No verificable', checks.ine.verificado ? 'green' : 'amber') : ''}
-        ${checks.ofac_pep ? renderCheck('OFAC / PEP / Sanciones', checks.ofac_pep.coincidencias ? 'Coincidencia: ' + (checks.ofac_pep.listas||[]).join(', ') : 'Sin coincidencias', checks.ofac_pep.coincidencias ? 'red' : 'green') : ''}
-        ${checks.boletin_concursal ? renderCheck('Boletín Concursal (IFECOM)', checks.boletin_concursal.en_concurso ? 'En concurso' : 'Sin proceso', checks.boletin_concursal.en_concurso ? 'red' : 'green') : ''}
-        ${checks.litigios ? renderCheck('Litigios judiciales', checks.litigios.litigios_activos ? `${checks.litigios.casos.length} caso(s) activo(s)` : 'Sin litigios activos', checks.litigios.litigios_activos ? 'amber' : 'green') : ''}
-        ${checks.quejas ? renderCheck('Quejas CONDUSEF/PROFECO', `${(checks.quejas.condusef_quejas||0)+(checks.quejas.profeco_quejas||0)} (${checks.quejas.severidad})`, (checks.quejas.severidad === 'grave' ? 'red' : checks.quejas.severidad === 'moderada' ? 'amber' : 'green')) : ''}
-        ${checks.buro ? renderCheck('Buró de Crédito', `Score ${checks.buro.score_buro} · ${checks.buro.creditos_atrasados} atrasos`, checks.buro.score_buro > 700 ? 'green' : checks.buro.score_buro > 600 ? 'amber' : 'red') : ''}
+      <div class="mt-7 rounded-xl border border-ink-200 px-4 divide-y divide-ink-100">
+        ${rows}
       </div>
 
-      ${banderas.length ? `<div class="banderas">
-        <h4>Banderas detectadas</h4>
-        ${banderas.map(b => `
-          <div class="bandera ${b.severidad}">
-            <span class="bandera-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            </span>
-            <span><strong>${escapeHtml(b.tipo).toUpperCase()}</strong> · ${escapeHtml(b.mensaje)}</span>
-          </div>`).join('')}
-      </div>` : ''}
+      ${banderasHtml}
 
-      <div style="margin-top:22px;display:flex;gap:10px;align-items:center;color:var(--gray-500);font-size:12.5px;">
-        <span>Consulta #${r.consulta_id}</span> ·
-        <span>Cobro: $${r.cobro.monto} (${r.cobro.fuente_pago})</span> ·
-        <span>${r.fecha_consulta?.slice(0,19).replace('T',' ')}</span>
+      <div class="mt-6 flex items-center justify-between text-xs text-ink-500">
+        <span>Consulta #${r.consulta_id} · ${(r.fecha_consulta || '').slice(0,19).replace('T',' ')}</span>
+        <a href="${API}/api/v1/me/consultas/${r.consulta_id}/pdf" target="_blank" class="font-semibold text-brand-700 hover:underline inline-flex items-center gap-1">Descargar PDF<svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg></a>
       </div>
-    </div>
-  `;
-  document.getElementById('resultPane').innerHTML = html;
+    </div>`;
 }
 
-function renderCheck(label, status, color) {
-  return `<div class="check-row ${color}">
-    <span class="label"><strong>${label}</strong></span>
-    <span class="status">${escapeHtml(status)}</span>
-  </div>`;
-}
-function colorHex(c) { return ({green:'#00A36C', amber:'#F5A524', orange:'#FF7A00', red:'#E5484D'})[c] || '#0070F3'; }
-function escapeHtml(s) { return String(s||'').replace(/[<>&"]/g, ch => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch])); }
-
+// ================= HISTORY =================
 async function cargarHistorico() {
   try {
     const cs = await api('/api/v1/me/consultas');
-    const html = cs.length === 0
-      ? '<p style="color:var(--gray-500);text-align:center;padding:40px 0;">Aún no tienes consultas. Empieza con una nueva.</p>'
-      : `<table style="width:100%;border-collapse:collapse;font-size:14px;">
-          <thead><tr style="text-align:left;color:var(--gray-500);font-size:12px;text-transform:uppercase;letter-spacing:1px;">
-            <th style="padding:12px 8px;border-bottom:1px solid var(--gray-100);">Fecha</th>
-            <th style="padding:12px 8px;border-bottom:1px solid var(--gray-100);">RFC</th>
-            <th style="padding:12px 8px;border-bottom:1px solid var(--gray-100);">Tier</th>
-            <th style="padding:12px 8px;border-bottom:1px solid var(--gray-100);">Score</th>
-            <th style="padding:12px 8px;border-bottom:1px solid var(--gray-100);">Veredicto</th>
-            <th style="padding:12px 8px;border-bottom:1px solid var(--gray-100);">Costo</th>
-          </tr></thead>
-          <tbody>${cs.map(c => `<tr>
-            <td style="padding:12px 8px;border-bottom:1px solid var(--gray-100);">${c.creada.slice(0,16).replace('T',' ')}</td>
-            <td style="padding:12px 8px;border-bottom:1px solid var(--gray-100);font-family:JetBrains Mono,monospace;">${c.rfc}</td>
-            <td style="padding:12px 8px;border-bottom:1px solid var(--gray-100);text-transform:capitalize;">${c.tier}</td>
-            <td style="padding:12px 8px;border-bottom:1px solid var(--gray-100);font-weight:700;">${c.score||'—'}</td>
-            <td style="padding:12px 8px;border-bottom:1px solid var(--gray-100);">${c.categoria||'—'}</td>
-            <td style="padding:12px 8px;border-bottom:1px solid var(--gray-100);">$${c.costo}</td>
-          </tr>`).join('')}</tbody>
-        </table>`;
-    document.getElementById('historyList').innerHTML = html;
+    if (!cs.length) {
+      $('historyList').innerHTML = '<div class="p-12 text-center text-ink-500 text-sm">Aún no tienes consultas. Empieza con una nueva.</div>';
+      return;
+    }
+    $('historyList').innerHTML = cs.map(c => {
+      const cat = c.categoria || '—';
+      const color = cat === 'EXCELENTE' || cat === 'CONFIABLE' ? 'accent' : cat === 'ACEPTABLE' ? 'warn' : 'danger';
+      return `<div class="flex items-center justify-between p-5 hover:bg-ink-50/50 transition">
+        <div class="flex items-center gap-4 min-w-0">
+          <div class="text-3xl font-extrabold tracking-tight text-ink-900 w-14 text-right">${Math.round((c.score||0)/10)}</div>
+          <div class="min-w-0">
+            <div class="font-semibold truncate">${c.nombre || 'Sin nombre'}</div>
+            <div class="text-xs mono text-ink-500">${c.rfc}</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 text-sm">
+          <span class="inline-flex items-center gap-1.5 bg-${color}-500/10 text-${color}-600 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">${cat}</span>
+          <span class="text-ink-500 hidden sm:block capitalize">${c.tier}</span>
+          <span class="text-ink-500 hidden md:block">${(c.creada||'').slice(0,16).replace('T',' ')}</span>
+          <a href="${API}/api/v1/me/consultas/${c.id}/pdf" target="_blank" class="text-brand-700 font-semibold hover:underline">PDF</a>
+        </div>
+      </div>`;
+    }).join('');
   } catch(e) { toast(e.message, true); }
 }
 
+// ================= BULK =================
+$('btnBulk').addEventListener('click', async () => {
+  const f = $('bulkFile').files[0];
+  if (!f) { toast('Selecciona un CSV primero', true); return; }
+  $('bulkLabel').textContent = 'Procesando…';
+  $('bulkSpinner').classList.remove('hidden');
+  try {
+    const fd = new FormData(); fd.append('file', f);
+    const r = await fetch(API + '/api/v1/check/bulk', {
+      method:'POST',
+      headers:{ 'Authorization':'Bearer ' + token },
+      body: fd,
+    });
+    if (!r.ok) throw new Error('Error ' + r.status);
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'trustscore-bulk-results.csv'; a.click();
+    URL.revokeObjectURL(url);
+    const total = r.headers.get('X-Total-Procesados') || '?';
+    const criticas = r.headers.get('X-Criticas-Encontradas') || '0';
+    $('bulkResult').innerHTML = `<div class="rounded-lg bg-accent-500/10 border border-accent-500/30 p-4 text-sm"><strong class="text-accent-700">${total} RFCs procesados.</strong> ${criticas} con bandera crítica detectada. CSV descargado.</div>`;
+    cargarPerfil();
+  } catch(e) { toast(e.message, true); $('bulkResult').innerHTML = `<div class="text-danger-600 text-sm">${e.message}</div>`; }
+  finally { $('bulkLabel').textContent = 'Procesar y descargar resultado'; $('bulkSpinner').classList.add('hidden'); }
+});
+
+// ================= MONITOR =================
+async function cargarMonitor() {
+  try {
+    const items = await api('/api/v1/monitor');
+    if (!items.length) { $('monitorList').innerHTML = '<div class="py-8 text-center text-ink-500 text-sm">Aún no tienes RFCs monitoreados.</div>'; return; }
+    $('monitorList').innerHTML = items.map(m => `
+      <div class="flex items-center justify-between py-4">
+        <div>
+          <div class="mono text-sm font-semibold">${m.rfc}</div>
+          <div class="text-xs text-ink-500 mt-0.5">Último score: ${m.last_score ?? '—'} · ${m.last_categoria ?? 'pendiente primera revisión'}</div>
+        </div>
+        <button onclick="quitarMonitor(${m.id})" class="text-xs text-danger-600 hover:underline">Desuscribir</button>
+      </div>
+    `).join('');
+  } catch(e) { toast(e.message, true); }
+}
+$('btnMonAdd').addEventListener('click', async () => {
+  const rfc = $('monRfc').value.trim().toUpperCase();
+  if (!rfc) return;
+  try { await api('/api/v1/monitor', { method:'POST', body:{rfc} }); $('monRfc').value = ''; cargarMonitor(); toast('RFC suscrito al monitoreo'); }
+  catch(e) { toast(e.message, true); }
+});
+async function quitarMonitor(id) {
+  try { await api('/api/v1/monitor/'+id, { method:'DELETE' }); cargarMonitor(); }
+  catch(e) { toast(e.message, true); }
+}
+
+// ================= BILLING =================
 async function comprar(item) {
   try {
-    const r = await api('/api/v1/billing/checkout', {method:'POST', body:{item}});
-    if (r.demo_mode) {
-      toast('Modo demo — Stripe no configurado. Acreditando saldo en local…');
-      // En demo, no abrimos Stripe. El backend acredita en el webhook real;
-      // aquí solo informamos al usuario.
-    } else {
-      window.location.href = r.url;
-    }
+    const r = await api('/api/v1/billing/checkout', { method:'POST', body:{item} });
+    if (r.demo_mode) { toast('Stripe en modo demo (configurar llaves para cobrar real)'); return; }
+    location.href = r.url;
   } catch(e) { toast(e.message, true); }
 }
-
-async function generarApiKey() {
+async function suscribir(plan) {
   try {
-    const r = await api('/api/v1/auth/api-key', {method:'POST'});
-    document.getElementById('apikeyResult').innerHTML = `
-      <div style="background:#0E2E54;color:#A6E3A1;padding:18px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:13px;word-break:break-all;">${r.api_key}</div>
-      <p style="color:var(--red);font-size:13px;margin-top:8px;">⚠️ ${r.aviso}</p>`;
+    const r = await api('/api/v1/billing/subscribe', { method:'POST', body:{plan} });
+    if (r.demo_mode) { toast('Stripe en modo demo'); return; }
+    location.href = r.url;
   } catch(e) { toast(e.message, true); }
 }
 
-// Init
-if (token) cargarPerfil();
-else document.getElementById('loginModal').classList.add('show');
+// ================= API KEY =================
+$('btnApiKey').addEventListener('click', async () => {
+  try {
+    const r = await api('/api/v1/auth/api-key', { method:'POST' });
+    $('apiKeyResult').innerHTML = `
+      <div class="rounded-xl bg-ink-950 text-accent-400 mono text-sm p-4 break-all border border-ink-800">${r.api_key}</div>
+      <p class="text-xs text-danger-600 mt-2 font-medium">⚠️ Guarda esta llave AHORA. No volverá a mostrarse completa.</p>`;
+  } catch(e) { toast(e.message, true); }
+});
+
+// ================= INIT =================
+$('apiBase').textContent = API;
+if (token) cargarPerfil(); else showAuth();
 </script>
+
 </body>
 </html>
