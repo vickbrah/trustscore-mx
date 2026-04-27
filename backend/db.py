@@ -9,9 +9,16 @@ from sqlalchemy import (
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./trustscore.db")
+
+# Render entrega DATABASE_URL en formato `postgres://...` pero SQLAlchemy 2.x
+# requiere `postgresql://...` (o `postgresql+psycopg2://...`). Normalizamos.
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 engine = create_engine(
     DATABASE_URL,
     connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
+    pool_pre_ping=True,  # reconecta si la conexión Postgres se duerme
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -59,19 +66,4 @@ class Consulta(Base):
     categoria = Column(String, nullable=True)
     payload_completo = Column(JSON, nullable=True)
     costo_cobrado = Column(Float, default=0.0)
-    costo_real = Column(Float, default=0.0)  # lo que nos costó a nosotros
-    creada = Column(DateTime, default=datetime.utcnow)
-
-    user = relationship("User", back_populates="consultas")
-
-
-def init_db() -> None:
-    Base.metadata.create_all(bind=engine)
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    costo_
