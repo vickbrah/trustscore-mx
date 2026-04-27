@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Env / secrets
+.env
+.env.local
+.env.production
+*.pem
+*.key
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Build artifacts
+dist/
+build/
+*.log
+
+# Render / deploy
+.render-buildlogs/
+
+# Datos descargados
+backend/data/sat_69b_real.csv

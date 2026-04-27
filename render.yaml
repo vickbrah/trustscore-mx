@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: trustscoremx-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: JWT_SECRET
+        generateValue: true       # Render genera valor aleatorio seguro
+      - key: JWT_ALG
+        value: HS256
+      - key: DATABASE_URL
+        fromDatabase:
+          name: trustscoremx-db
+          property: connectionString
+      - key: APP_URL
+        value: https://api.trustscoremx.com
+      - key: FRONTEND_URL
+        value: https://trustscoremx.com
+      - key: STRIPE_SECRET_KEY
+        sync: false               # se llena manual cuando configures Stripe
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+
+databases:
+  - name: trustscoremx-db
+    plan: free
+    databaseName: trustscoremx
+    user: trustscoremx
