@@ -52,18 +52,37 @@ async def verificar_ine_renapo(rfc: str, clave_ine: str = "") -> Dict[str, Any]:
 # ============================================================
 
 async def consultar_ofac_pep(nombre: str, rfc: str = "") -> Dict[str, Any]:
-    if not _is_real_api_configured("TRUORA_API_KEY"):
-        # Stub: nombres con "TRUCHO", "FANTASMA", "TIMA" quedan como hit
-        hit_keywords = ["TRUCHO", "FANTASMA", "TIMA", "PUTIN", "MARO"]
-        is_hit = any(kw in nombre.upper() for kw in hit_keywords)
+    # Si la lista OFAC SDN local existe, usarla (gratis, oficial, ~18,800 entries)
+    from .ofac import buscar_ofac, DATA_PATH as OFAC_DATA
+    if OFAC_DATA.exists():
+        r = buscar_ofac(nombre, max_results=5)
         return {
-            "coincidencias": is_hit,
-            "listas": ["OFAC SDN", "ONU"] if is_hit else [],
-            "categoria": "PEP" if is_hit else None,
-            "fuente": "Truora Background Check (MOCK)",
-            "nota_mvp": "Stub — conecta TRUORA_API_KEY para listas reales",
+            "coincidencias": r["coincidencias"],
+            "listas": ["OFAC SDN"] if r["coincidencias"] else [],
+            "categoria": "Sanctions" if r["coincidencias"] else None,
+            "matches": r.get("matches", []),
+            "fuente": r.get("fuente", "OFAC SDN"),
+            "total_indexado": r.get("total_index"),
         }
-    # === Llamada real ===
+
+    # Si Truora esta configurado, usar su API (mas amplio: PEP + ONU + EU)
+    if _is_real_api_configured("TRUORA_API_KEY"):
+        # === Llamada real Truora ===
+        # async with httpx.AsyncClient(timeout=15.0) as client:
+        #     r = await client.post(...)
+        return {"coincidencias": False, "fuente": "Truora", "error": "no implementado"}
+
+    # Fallback: Stub determinista (solo si no hay OFAC ni Truora)
+    hit_keywords = ["TRUCHO", "FANTASMA", "TIMA", "PUTIN"]
+    is_hit = any(kw in nombre.upper() for kw in hit_keywords)
+    return {
+        "coincidencias": is_hit,
+        "listas": ["OFAC SDN"] if is_hit else [],
+        "categoria": "PEP" if is_hit else None,
+        "fuente": "MOCK (sin datos reales)",
+        "nota_mvp": "Falta lista OFAC. Correr scripts/update_ofac.py",
+    }
+    # === Codigo Truora original (preservado para futuro) ===
     # async with httpx.AsyncClient(timeout=15.0) as client:
     #     r = await client.post(
     #         "https://api.truora.com/v1/checks",
